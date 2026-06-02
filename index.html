@@ -124,29 +124,34 @@
 
         async function fetchDashboard() {
             state.isLoading = true;
-            TrackFlowCommon.setBanner('statusBanner', 'Loading projects...');
-
-            try {
-                const payload = await TrackFlowCommon.requestJson('api.php', {}, 'Failed to load data.');
-                applyPayload(payload);
-
-                if (state.projects.length > 0) {
+            await TrackFlowCommon.loadPageData({
+                bannerId: 'statusBanner',
+                loadingMessage: 'Loading projects...',
+                fallbackMessage: 'Failed to load data.',
+                applyPayload,
+                onSuccess() {
                     const activeExists = state.projects.some(project => project.id === state.activeProjectId);
-                    state.activeProjectId = activeExists ? state.activeProjectId : state.projects[0].id;
-                    TrackFlowCommon.setBanner('statusBanner');
-                } else {
+
+                    if (state.projects.length > 0) {
+                        state.activeProjectId = activeExists ? state.activeProjectId : state.projects[0].id;
+                        TrackFlowCommon.setBanner('statusBanner');
+                        return;
+                    }
+
                     state.activeProjectId = null;
                     TrackFlowCommon.setBanner('statusBanner', 'No projects found in the database.', 'error');
-                }
-            } catch (error) {
-                state.projects = [];
-                state.contributors = [];
-                state.activeProjectId = null;
-                TrackFlowCommon.setBanner('statusBanner', error.message || 'Unable to load data.', 'error');
-            } finally {
-                state.isLoading = false;
-                render();
-            }
+                },
+                onError(error) {
+                    state.projects = [];
+                    state.contributors = [];
+                    state.activeProjectId = null;
+                    TrackFlowCommon.setBanner('statusBanner', error.message || 'Unable to load data.', 'error');
+                },
+                onFinally() {
+                    state.isLoading = false;
+                },
+                render
+            });
         }
 
         function renderSidebar() {

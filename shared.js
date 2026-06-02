@@ -24,6 +24,47 @@ window.TrackFlowCommon = {
         state.auth = this.normalizeAuth(payload);
     },
 
+    async loadPageData(config) {
+        const {
+            bannerId,
+            loadingMessage,
+            url = 'api.php',
+            fallbackMessage = 'Failed to load data.',
+            applyPayload,
+            render,
+            onSuccess,
+            onError,
+            onFinally
+        } = config;
+
+        this.setBanner(bannerId, loadingMessage);
+
+        try {
+            const payload = await this.requestJson(url, {}, fallbackMessage);
+            applyPayload(payload);
+
+            if (typeof onSuccess === 'function') {
+                onSuccess(payload);
+            } else {
+                this.setBanner(bannerId);
+            }
+        } catch (error) {
+            if (typeof onError === 'function') {
+                onError(error);
+            } else {
+                this.setBanner(bannerId, error.message || fallbackMessage, 'error');
+            }
+        } finally {
+            if (typeof onFinally === 'function') {
+                onFinally();
+            }
+
+            if (typeof render === 'function') {
+                render();
+            }
+        }
+    },
+
     setBanner(bannerId, message = '', type = 'info') {
         const banner = document.getElementById(bannerId);
         if (!banner) {

@@ -62,18 +62,20 @@
         }
 
         async function fetchContributors() {
-            TrackFlowCommon.setBanner('statusBanner', 'Loading contributors...');
-
-            try {
-                const payload = await TrackFlowCommon.requestJson('api.php', {}, 'Failed to load data.');
-                applyPayload(payload);
-                TrackFlowCommon.setBanner('statusBanner');
-            } catch (error) {
-                applyPayload({});
-                TrackFlowCommon.setBanner('statusBanner', error.message || 'Unable to load data.', 'error');
-            } finally {
-                render();
-            }
+            await TrackFlowCommon.loadPageData({
+                bannerId: 'statusBanner',
+                loadingMessage: 'Loading contributors...',
+                fallbackMessage: 'Failed to load data.',
+                applyPayload,
+                onSuccess() {
+                    TrackFlowCommon.setBanner('statusBanner');
+                },
+                onError(error) {
+                    applyPayload({});
+                    TrackFlowCommon.setBanner('statusBanner', error.message || 'Unable to load data.', 'error');
+                },
+                render
+            });
         }
 
         function renderAccess() {
