@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>A&T Media TrackFlow - Daily Work Log</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+    <div id="app" class="max-w-5xl mx-auto p-4 md:p-8">
+        
+        <header class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900">A&T Media TrackFlow</h1>
+                <p class="text-gray-500">Project Progress Tracker</p>
+            </div>
+            <button onclick="toggleModal(true)" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-semibold transition shadow-md hover:shadow-lg">
+                + Add Task Log
+            </button>
+        </header>
+
+        <div class="grid md:grid-cols-4 gap-6">
+            <aside class="md:col-span-1 bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+                <h2 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">Active Projects</h2>
+                <nav id="projectList" class="space-y-2">
+                    <!-- Sidebar links injected by JS -->
+                </nav>
+            </aside>
+
+            <main class="md:col-span-3">
+                <div id="projectDetail" class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 min-h-[400px]">
+                    <h2 id="viewProjectName" class="text-2xl font-bold text-gray-900 mb-2">Select a project</h2>
+                    <p id="viewProjectStatus" class="text-sm text-gray-500 mb-6"></p>
+                    
+                    <div id="logTimeline" class="space-y-4">
+                        <!-- Timeline items injected by JS -->
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <div id="logModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-lg p-6">
+            <h2 class="text-xl font-bold mb-4">Log Daily Task</h2>
+            <form onsubmit="handleFormSubmit(event)" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Project</label>
+                    <select id="selectProject" required class="w-full mt-1 border border-gray-300 rounded-lg p-2 focus:ring-blue-500 focus:border-blue-500">
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Task Name</label>
+                    <input type="text" id="taskName" required class="w-full mt-1 border border-gray-300 rounded-lg p-2" placeholder="e.g. Design Print Proof">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Status</label>
+                    <select id="taskStatus" class="w-full mt-1 border border-gray-300 rounded-lg p-2">
+                        <option value="Done">Done</option>
+                        <option value="In Progress">In Progress</option>
+                        <option value="Blocked">Blocked</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Description</label>
+                    <textarea id="logSummary" required class="w-full mt-1 border border-gray-300 rounded-lg p-2 h-20" placeholder="Details of the work performed..."></textarea>
+                </div>
+                <div class="flex justify-end space-x-3 mt-6">
+                    <button type="button" onclick="toggleModal(false)" class="text-gray-600 font-semibold px-4 py-2 hover:bg-gray-100 rounded-lg">Cancel</button>
+                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-semibold shadow-md">Save Task</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const state = {
+            projects: [
+                { id: 1, name: "Shop Signage", status: "Active", logs: [{ date: "2026-06-02", task: "Site Survey", status: "Done", note: "Measurements finalized." }] },
+                { id: 2, name: "Renovation Phase 2", status: "Delayed", logs: [{ date: "2026-06-01", task: "Plumbing", status: "Done", note: "Pipe installation complete." }] },
+                { id: 3, name: "Inventory Audit", status: "Active", logs: [] }
+            ],
+            activeProjectId: 1
+        };
+
+        function renderSidebar() {
+            const container = document.getElementById('projectList');
+            const select = document.getElementById('selectProject');
+            
+            container.innerHTML = '';
+            select.innerHTML = '';
+
+            state.projects.forEach(p => {
+                const btn = document.createElement('button');
+                btn.className = `w-full text-left p-3 rounded-lg transition ${state.activeProjectId === p.id ? 'bg-blue-50 text-blue-700 font-semibold' : 'text-gray-600 hover:bg-gray-50'}`;
+                btn.innerText = p.name;
+                btn.onclick = () => { state.activeProjectId = p.id; render(); };
+                container.appendChild(btn);
+
+                const opt = document.createElement('option');
+                opt.value = p.id;
+                opt.innerText = p.name;
+                select.appendChild(opt);
+            });
+        }
+
+        function renderMain() {
+            const project = state.projects.find(p => p.id === state.activeProjectId);
+            document.getElementById('viewProjectName').innerText = project.name;
+            document.getElementById('viewProjectStatus').innerHTML = `Status: <span class="px-2 py-1 bg-gray-100 rounded-full text-xs font-bold uppercase">${project.status}</span>`;
+            
+            const timeline = document.getElementById('logTimeline');
+            timeline.innerHTML = '';
+            
+            if (project.logs.length === 0) {
+                timeline.innerHTML = '<p class="text-gray-400 italic">No tasks logged for this project.</p>';
+            } else {
+                project.logs.forEach(log => {
+                    const statusColor = log.status === 'Done' ? 'bg-green-100 text-green-700' : (log.status === 'In Progress' ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700');
+                    timeline.innerHTML += `
+                        <div class="border-l-2 border-blue-200 pl-4 py-2 hover:bg-gray-50 transition rounded-r-lg">
+                            <div class="flex justify-between items-center mb-1">
+                                <span class="text-xs text-gray-400 font-bold uppercase">${log.date}</span>
+                                <span class="text-[10px] px-2 py-0.5 rounded-full ${statusColor}">${log.status}</span>
+                            </div>
+                            <h4 class="font-semibold text-gray-800">${log.task}</h4>
+                            <p class="text-gray-600 text-sm mt-1">${log.note}</p>
+                        </div>
+                    `;
+                });
+            }
+        }
+
+        function render() {
+            renderSidebar();
+            renderMain();
+        }
+
+        function toggleModal(show) {
+            document.getElementById('logModal').classList.toggle('hidden', !show);
+        }
+
+        function handleFormSubmit(e) {
+            e.preventDefault();
+            const projectId = parseInt(document.getElementById('selectProject').value);
+            const task = document.getElementById('taskName').value;
+            const status = document.getElementById('taskStatus').value;
+            const note = document.getElementById('logSummary').value;
+            const date = new Date().toISOString().split('T')[0];
+
+            const project = state.projects.find(p => p.id === projectId);
+            project.logs.unshift({ date, task, status, note });
+            
+            toggleModal(false);
+            render();
+            e.target.reset();
+        }
+
+        window.onload = render;
+    </script>
+</body>
+</html>
