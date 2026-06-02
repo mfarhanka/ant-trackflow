@@ -5,8 +5,22 @@ window.TrackFlowCommon = {
 
     normalizeAuth(payload) {
         return payload.auth && typeof payload.auth === 'object'
-            ? { isAdmin: Boolean(payload.auth.isAdmin), admin: payload.auth.admin || null }
-            : { isAdmin: false, admin: null };
+            ? {
+                isAuthenticated: Boolean(payload.auth.isAuthenticated),
+                role: payload.auth.role || null,
+                isAdmin: Boolean(payload.auth.isAdmin),
+                isContributor: Boolean(payload.auth.isContributor),
+                admin: payload.auth.admin || null,
+                contributor: payload.auth.contributor || null
+            }
+            : {
+                isAuthenticated: false,
+                role: null,
+                isAdmin: false,
+                isContributor: false,
+                admin: null,
+                contributor: null
+            };
     },
 
     applyProjectContributorPayload(state, payload) {

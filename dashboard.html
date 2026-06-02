@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>A&T Media TrackFlow - Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="shared.js"></script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="app-shell min-h-screen">
+    <div id="app" class="max-w-5xl mx-auto p-4 md:p-8">
+        <header class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-8">
+            <div>
+                <h1 class="text-3xl font-bold text-white">A&T Media TrackFlow</h1>
+                <p class="text-red-200/70">Project Progress Tracker</p>
+                <p id="sessionSummary" class="mt-2 text-sm text-neutral-400">Checking session...</p>
+            </div>
+            <div class="flex flex-wrap items-center gap-3">
+                <a id="contributorsLink" href="contributors.html" class="hidden bg-neutral-950 hover:bg-neutral-900 text-red-100 px-4 py-2 rounded-lg font-semibold transition border border-red-900/60 shadow-sm">Contributors</a>
+                <a id="adminLink" href="admin.html" class="hidden bg-neutral-950 hover:bg-neutral-900 text-red-100 px-4 py-2 rounded-lg font-semibold transition border border-red-900/60 shadow-sm">Admin</a>
+                <button id="addProjectButton" onclick="openProjectModal()" class="hidden bg-neutral-950 hover:bg-neutral-900 text-red-100 px-4 py-2 rounded-lg font-semibold transition border border-red-900/60 shadow-sm">+ Add Project</button>
+                <button onclick="toggleLogModal(true)" class="bg-red-700 hover:bg-red-800 text-white px-4 py-2 rounded-lg font-semibold transition shadow-md hover:shadow-lg danger-glow">+ Add Task Log</button>
+                <button id="logoutButton" onclick="logoutUser()" class="rounded-lg border border-red-900/60 px-4 py-2 text-sm font-semibold text-red-400 transition hover:bg-red-950/60">Logout</button>
+            </div>
+        </header>
+
+        <div class="grid md:grid-cols-4 gap-6">
+            <aside class="panel md:col-span-1 p-4 rounded-xl">
+                <h2 class="text-xs font-bold text-red-200/60 uppercase tracking-wider mb-4">Projects</h2>
+                <nav id="projectList" class="space-y-2"></nav>
+            </aside>
+
+            <main class="md:col-span-3">
+                <section class="panel p-6 rounded-xl min-h-[420px]">
+                    <div id="statusBanner" data-base-class="hidden mb-4 rounded-lg border px-4 py-3 text-sm" class="hidden mb-4 rounded-lg border px-4 py-3 text-sm"></div>
+                    <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between mb-6">
+                        <div>
+                            <h2 id="viewProjectName" class="text-2xl font-bold text-white mb-2">Select a project</h2>
+                            <p id="viewProjectStatus" class="text-sm text-neutral-400"></p>
+                        </div>
+                        <div class="flex gap-3">
+                            <button id="editProjectButton" onclick="openProjectModal(state.activeProjectId)" class="rounded-lg border border-neutral-800 px-4 py-2 text-sm font-semibold text-neutral-100 transition hover:bg-neutral-900 disabled:cursor-not-allowed disabled:opacity-50">Edit Project</button>
+                            <button id="deleteProjectButton" onclick="deleteActiveProject()" class="rounded-lg border border-red-900/60 px-4 py-2 text-sm font-semibold text-red-400 transition hover:bg-red-950/60 disabled:cursor-not-allowed disabled:opacity-50">Delete Project</button>
+                        </div>
+                    </div>
+                    <div id="logTimeline" class="space-y-4"></div>
+                </section>
+            </main>
+        </div>
+    </div>
+
+    <div id="logModal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50">
+        <div class="panel rounded-xl shadow-xl w-full max-w-lg p-6">
+            <h2 class="text-xl font-bold mb-4 text-white">Log Daily Task</h2>
+            <form onsubmit="handleLogSubmit(event)" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-neutral-200">Project</label>
+                    <select id="selectProject" required class="w-full mt-1 border border-neutral-800 bg-neutral-950 text-white rounded-lg p-2 focus:ring-red-600 focus:border-red-600"></select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-neutral-200">Task Name</label>
+                    <input type="text" id="taskName" required class="w-full mt-1 border border-neutral-800 bg-neutral-950 text-white rounded-lg p-2 placeholder:text-neutral-500" placeholder="e.g. Design Print Proof">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-neutral-200">Status</label>
+                    <select id="taskStatus" class="w-full mt-1 border border-neutral-800 bg-neutral-950 text-white rounded-lg p-2">
+                        <option value="Done">Done</option>
+                        <option value="In Progress">In Progress</option>
+                        <option value="Blocked">Blocked</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-neutral-200">Contributor</label>
+                    <select id="selectContributor" required class="w-full mt-1 border border-neutral-800 bg-neutral-950 text-white rounded-lg p-2 focus:ring-red-600 focus:border-red-600"></select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-neutral-200">Description</label>
+                    <textarea id="logSummary" required class="w-full mt-1 border border-neutral-800 bg-neutral-950 text-white rounded-lg p-2 h-20 placeholder:text-neutral-500" placeholder="Details of the work performed..."></textarea>
+                </div>
+                <div class="flex justify-end gap-3 mt-6">
+                    <button type="button" onclick="toggleLogModal(false)" class="text-neutral-300 font-semibold px-4 py-2 hover:bg-neutral-900 rounded-lg">Cancel</button>
+                    <button type="submit" class="bg-red-700 hover:bg-red-800 text-white px-6 py-2 rounded-lg font-semibold shadow-md danger-glow">Save Task</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="projectModal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50">
+        <div class="panel rounded-xl shadow-xl w-full max-w-lg p-6">
+            <h2 id="projectModalTitle" class="text-xl font-bold mb-4 text-white">Add Project</h2>
+            <form onsubmit="handleProjectSubmit(event)" class="space-y-4">
+                <input type="hidden" id="projectIdField">
+                <div>
+                    <label class="block text-sm font-medium text-neutral-200">Project Name</label>
+                    <input type="text" id="projectName" required class="w-full mt-1 border border-neutral-800 bg-neutral-950 text-white rounded-lg p-2 placeholder:text-neutral-500" placeholder="e.g. New Branch Signage">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-neutral-200">Status</label>
+                    <select id="projectStatus" class="w-full mt-1 border border-neutral-800 bg-neutral-950 text-white rounded-lg p-2">
+                        <option value="Active">Active</option>
+                        <option value="Delayed">Delayed</option>
+                        <option value="Completed">Completed</option>
+                        <option value="On Hold">On Hold</option>
+                    </select>
+                </div>
+                <div class="flex justify-end gap-3 mt-6">
+                    <button type="button" onclick="toggleProjectModal(false)" class="text-neutral-300 font-semibold px-4 py-2 hover:bg-neutral-900 rounded-lg">Cancel</button>
+                    <button type="submit" class="bg-red-700 hover:bg-red-800 text-white px-6 py-2 rounded-lg font-semibold shadow-md danger-glow">Save Project</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const state = {
+            projects: [],
+            contributors: [],
+            auth: {
+                isAuthenticated: false,
+                role: null,
+                isAdmin: false,
+                isContributor: false,
+                admin: null,
+                contributor: null
+            },
+            activeProjectId: null,
+            isLoading: false
+        };
+
+        function applyPayload(payload) {
+            TrackFlowCommon.applyProjectContributorAuthPayload(state, payload);
+        }
+
+        async function fetchDashboard() {
+            state.isLoading = true;
+
+            await TrackFlowCommon.loadPageData({
+                bannerId: 'statusBanner',
+                loadingMessage: 'Loading dashboard...',
+                fallbackMessage: 'Failed to load data.',
+                applyPayload,
+                onSuccess() {
+                    if (!state.auth.isAuthenticated) {
+                        window.location.href = 'index.html';
+                        return;
+                    }
+
+                    const activeExists = state.projects.some(project => project.id === state.activeProjectId);
+
+                    if (state.projects.length > 0) {
+                        state.activeProjectId = activeExists ? state.activeProjectId : state.projects[0].id;
+                        TrackFlowCommon.setBanner('statusBanner');
+                        return;
+                    }
+
+                    state.activeProjectId = null;
+                    TrackFlowCommon.setBanner('statusBanner', 'No projects found in the database.', 'error');
+                },
+                onError(error) {
+                    state.projects = [];
+                    state.contributors = [];
+                    state.activeProjectId = null;
+                    state.auth = TrackFlowCommon.normalizeAuth({});
+                    TrackFlowCommon.setBanner('statusBanner', error.message || 'Unable to load data.', 'error');
+                },
+                onFinally() {
+                    state.isLoading = false;
+                },
+                render
+            });
+        }
+
+        function renderHeader() {
+            const sessionSummary = document.getElementById('sessionSummary');
+            const contributorsLink = document.getElementById('contributorsLink');
+            const adminLink = document.getElementById('adminLink');
+            const addProjectButton = document.getElementById('addProjectButton');
+
+            if (state.auth.isAdmin && state.auth.admin) {
+                sessionSummary.textContent = `Signed in as admin ${state.auth.admin.username}. Full project management is enabled.`;
+                contributorsLink.classList.remove('hidden');
+                adminLink.classList.remove('hidden');
+                addProjectButton.classList.remove('hidden');
+                return;
+            }
+
+            if (state.auth.isContributor && state.auth.contributor) {
+                sessionSummary.textContent = `Signed in as contributor ${state.auth.contributor.name}. You can add task logs to projects.`;
+                contributorsLink.classList.add('hidden');
+                adminLink.classList.add('hidden');
+                addProjectButton.classList.add('hidden');
+                return;
+            }
+
+            sessionSummary.textContent = 'Login required.';
+            contributorsLink.classList.add('hidden');
+            adminLink.classList.add('hidden');
+            addProjectButton.classList.add('hidden');
+        }
+
+        function renderSidebar() {
+            const container = document.getElementById('projectList');
+            const select = document.getElementById('selectProject');
+            const contributorSelect = document.getElementById('selectContributor');
+
+            container.innerHTML = '';
+            select.innerHTML = '';
+            contributorSelect.innerHTML = '';
+
+            if (state.projects.length === 0) {
+                container.innerHTML = '<p class="text-sm text-neutral-500">No projects available.</p>';
+                select.innerHTML = '<option value="">No projects available</option>';
+            } else {
+                state.projects.forEach(project => {
+                    const button = document.createElement('button');
+                    button.className = `w-full text-left p-3 rounded-lg border transition ${state.activeProjectId === project.id ? 'border-red-800 bg-red-950/60 text-red-100 font-semibold' : 'border-transparent text-neutral-300 hover:border-red-950 hover:bg-neutral-950'}`;
+                    button.innerText = project.name;
+                    button.onclick = () => {
+                        state.activeProjectId = project.id;
+                        render();
+                    };
+                    container.appendChild(button);
+
+                    const option = document.createElement('option');
+                    option.value = project.id;
+                    option.innerText = project.name;
+                    select.appendChild(option);
+                });
+            }
+
+            if (state.auth.isContributor && state.auth.contributor) {
+                const option = document.createElement('option');
+                option.value = state.auth.contributor.id;
+                option.innerText = state.auth.contributor.name;
+                contributorSelect.appendChild(option);
+                contributorSelect.disabled = true;
+                return;
+            }
+
+            contributorSelect.disabled = false;
+
+            if (state.contributors.length === 0) {
+                contributorSelect.innerHTML = '<option value="">No contributors available</option>';
+                return;
+            }
+
+            state.contributors.forEach(contributor => {
+                const option = document.createElement('option');
+                option.value = contributor.id;
+                option.innerText = contributor.name;
+                contributorSelect.appendChild(option);
+            });
+        }
+
+        function updateProjectActionState(project) {
+            const canManageProjects = state.auth.isAdmin;
+            document.getElementById('editProjectButton').disabled = !canManageProjects || !project;
+            document.getElementById('deleteProjectButton').disabled = !canManageProjects || !project;
+            document.getElementById('editProjectButton').classList.toggle('hidden', !canManageProjects);
+            document.getElementById('deleteProjectButton').classList.toggle('hidden', !canManageProjects);
+        }
+
+        function renderMain() {
+            const project = state.projects.find(item => item.id === state.activeProjectId);
+            updateProjectActionState(project);
+
+            if (!project) {
+                document.getElementById('viewProjectName').innerText = 'No project selected';
+                document.getElementById('viewProjectStatus').innerText = state.isLoading ? 'Loading project data...' : 'Add projects in the database to begin tracking.';
+                document.getElementById('logTimeline').innerHTML = '<p class="text-neutral-500 italic">No tasks logged yet.</p>';
+                return;
+            }
+
+            document.getElementById('viewProjectName').innerText = project.name;
+            document.getElementById('viewProjectStatus').innerHTML = `Status: <span class="px-2 py-1 bg-red-950/70 text-red-100 rounded-full text-xs font-bold uppercase border border-red-900/60">${project.status}</span>`;
+
+            const timeline = document.getElementById('logTimeline');
+            timeline.innerHTML = '';
+
+            if (project.logs.length === 0) {
+                timeline.innerHTML = '<p class="text-neutral-500 italic">No tasks logged for this project.</p>';
+                return;
+            }
+
+            project.logs.forEach(log => {
+                const statusColor = log.status === 'Done'
+                    ? 'bg-red-950/60 text-red-100 border border-red-800/50'
+                    : (log.status === 'In Progress'
+                        ? 'bg-neutral-900 text-red-200 border border-red-900/50'
+                        : 'bg-red-900/30 text-red-300 border border-red-700/50');
+
+                timeline.innerHTML += `
+                    <div class="border-l-2 border-red-700 pl-4 py-3 hover:bg-neutral-950/60 transition rounded-r-lg bg-neutral-950/30">
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-xs text-neutral-500 font-bold uppercase">${log.date}</span>
+                            <span class="text-[10px] px-2 py-0.5 rounded-full ${statusColor}">${log.status}</span>
+                        </div>
+                        <h4 class="font-semibold text-white">${log.task}</h4>
+                        <p class="text-xs font-semibold uppercase tracking-wide text-red-300 mt-1">${log.contributorName || 'Unassigned'}</p>
+                        <p class="text-neutral-300 text-sm mt-1">${log.note}</p>
+                    </div>
+                `;
+            });
+        }
+
+        function render() {
+            renderHeader();
+            renderSidebar();
+            renderMain();
+        }
+
+        function toggleLogModal(show) {
+            if (show && state.projects.length === 0) {
+                TrackFlowCommon.setBanner('statusBanner', 'Create at least one project before logging work.', 'error');
+                return;
+            }
+
+            if (show && state.auth.isAdmin && state.contributors.length === 0) {
+                TrackFlowCommon.setBanner('statusBanner', 'Create at least one contributor on the Contributors page before logging work.', 'error');
+                return;
+            }
+
+            TrackFlowCommon.toggleHidden('logModal', show);
+        }
+
+        function toggleProjectModal(show) {
+            if (!state.auth.isAdmin) {
+                TrackFlowCommon.setBanner('statusBanner', 'Admin access required to manage projects.', 'error');
+                return;
+            }
+
+            TrackFlowCommon.toggleHidden('projectModal', show);
+        }
+
+        function openProjectModal(projectId = null) {
+            const form = document.getElementById('projectModal').querySelector('form');
+            form.reset();
+
+            const title = document.getElementById('projectModalTitle');
+            const idField = document.getElementById('projectIdField');
+            const nameField = document.getElementById('projectName');
+            const statusField = document.getElementById('projectStatus');
+
+            if (projectId === null) {
+                title.innerText = 'Add Project';
+                idField.value = '';
+                statusField.value = 'Active';
+            } else {
+                const project = state.projects.find(item => item.id === projectId);
+                if (!project) {
+                    TrackFlowCommon.setBanner('statusBanner', 'Project not found.', 'error');
+                    return;
+                }
+
+                title.innerText = 'Edit Project';
+                idField.value = project.id;
+                nameField.value = project.name;
+                statusField.value = project.status;
+            }
+
+            toggleProjectModal(true);
+        }
+
+        async function handleProjectSubmit(event) {
+            event.preventDefault();
+
+            const projectId = document.getElementById('projectIdField').value;
+            const name = document.getElementById('projectName').value.trim();
+            const status = document.getElementById('projectStatus').value;
+            const isEditing = projectId !== '';
+
+            try {
+                TrackFlowCommon.setBanner('statusBanner', isEditing ? 'Updating project...' : 'Creating project...');
+
+                const payload = await TrackFlowCommon.requestJson('api.php', {
+                    method: isEditing ? 'PUT' : 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(isEditing
+                        ? { projectId: parseInt(projectId, 10), name, status }
+                        : { entity: 'project', name, status })
+                }, 'Failed to save project.');
+
+                applyPayload(payload);
+                state.activeProjectId = isEditing ? parseInt(projectId, 10) : payload.projectId;
+                toggleProjectModal(false);
+                event.target.reset();
+                TrackFlowCommon.setBanner('statusBanner', isEditing ? 'Project updated successfully.' : 'Project created successfully.');
+                render();
+            } catch (error) {
+                TrackFlowCommon.setBanner('statusBanner', error.message || 'Failed to save project.', 'error');
+            }
+        }
+
+        async function deleteActiveProject() {
+            const project = state.projects.find(item => item.id === state.activeProjectId);
+            if (!project) {
+                return;
+            }
+
+            if (!window.confirm(`Delete project "${project.name}" and all of its task logs?`)) {
+                return;
+            }
+
+            try {
+                TrackFlowCommon.setBanner('statusBanner', 'Deleting project...');
+
+                const payload = await TrackFlowCommon.requestJson('api.php', {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ projectId: project.id })
+                }, 'Failed to delete project.');
+
+                applyPayload(payload);
+                state.activeProjectId = state.projects.length > 0 ? state.projects[0].id : null;
+                TrackFlowCommon.setBanner('statusBanner', 'Project deleted successfully.');
+                render();
+            } catch (error) {
+                TrackFlowCommon.setBanner('statusBanner', error.message || 'Failed to delete project.', 'error');
+            }
+        }
+
+        async function handleLogSubmit(event) {
+            event.preventDefault();
+
+            const projectId = parseInt(document.getElementById('selectProject').value, 10);
+            const contributorId = parseInt(document.getElementById('selectContributor').value, 10);
+            const task = document.getElementById('taskName').value;
+            const status = document.getElementById('taskStatus').value;
+            const note = document.getElementById('logSummary').value;
+
+            try {
+                TrackFlowCommon.setBanner('statusBanner', 'Saving task log...');
+
+                const payload = await TrackFlowCommon.requestJson('api.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ projectId, contributorId, task, status, note })
+                }, 'Failed to save task log.');
+
+                applyPayload(payload);
+                state.activeProjectId = projectId;
+                toggleLogModal(false);
+                event.target.reset();
+                TrackFlowCommon.setBanner('statusBanner', 'Task log saved successfully.');
+                render();
+            } catch (error) {
+                TrackFlowCommon.setBanner('statusBanner', error.message || 'Failed to save task log.', 'error');
+            }
+        }
+
+        async function logoutUser() {
+            try {
+                await TrackFlowCommon.requestJson('api.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ entity: 'logout' })
+                }, 'Failed to sign out.');
+
+                window.location.href = 'index.html';
+            } catch (error) {
+                TrackFlowCommon.setBanner('statusBanner', error.message || 'Failed to sign out.', 'error');
+            }
+        }
+
+        window.onload = fetchDashboard;
+    </script>
+</body>
+</html>

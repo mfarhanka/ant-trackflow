@@ -3,388 +3,211 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>A&T Media TrackFlow - Dashboard</title>
+    <title>A&T Media TrackFlow - Login</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="shared.js"></script>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body class="app-shell min-h-screen">
-    <div id="app" class="max-w-5xl mx-auto p-4 md:p-8">
-        <header class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-8">
+    <div class="max-w-5xl mx-auto p-4 md:p-8">
+        <header class="mb-8 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
             <div>
-                <h1 class="text-3xl font-bold text-white">A&T Media TrackFlow</h1>
-                <p class="text-red-200/70">Project Progress Tracker</p>
+                <p class="text-xs font-bold uppercase tracking-[0.3em] text-red-300/70">A&T Media</p>
+                <h1 class="mt-2 text-4xl font-bold text-white">TrackFlow Login</h1>
+                <p class="mt-3 max-w-2xl text-sm text-neutral-400">Index is now the sign-in entry for admins and contributors. After login, admins can manage projects and contributors, while contributors can go straight to the task dashboard.</p>
             </div>
-            <div class="flex flex-wrap items-center gap-3">
-                <a href="contributors.html" class="bg-neutral-950 hover:bg-neutral-900 text-red-100 px-4 py-2 rounded-lg font-semibold transition border border-red-900/60 shadow-sm">Contributors</a>
-                <a href="admin.html" class="bg-neutral-950 hover:bg-neutral-900 text-red-100 px-4 py-2 rounded-lg font-semibold transition border border-red-900/60 shadow-sm">Admin</a>
-                <button onclick="openProjectModal()" class="bg-neutral-950 hover:bg-neutral-900 text-red-100 px-4 py-2 rounded-lg font-semibold transition border border-red-900/60 shadow-sm">+ Add Project</button>
-                <button onclick="toggleLogModal(true)" class="bg-red-700 hover:bg-red-800 text-white px-4 py-2 rounded-lg font-semibold transition shadow-md hover:shadow-lg danger-glow">+ Add Task Log</button>
+            <div class="flex flex-wrap gap-3">
+                <a href="dashboard.html" class="rounded-lg border border-red-900/60 bg-neutral-950 px-4 py-2 text-sm font-semibold text-red-100 transition hover:bg-neutral-900">Dashboard</a>
+                <a href="admin.html" class="rounded-lg border border-red-900/60 bg-neutral-950 px-4 py-2 text-sm font-semibold text-red-100 transition hover:bg-neutral-900">Admin</a>
+                <a href="contributors.html" class="rounded-lg border border-red-900/60 bg-neutral-950 px-4 py-2 text-sm font-semibold text-red-100 transition hover:bg-neutral-900">Contributors</a>
             </div>
         </header>
 
-        <div class="grid md:grid-cols-4 gap-6">
-            <aside class="panel md:col-span-1 p-4 rounded-xl">
-                <h2 class="text-xs font-bold text-red-200/60 uppercase tracking-wider mb-4">Projects</h2>
-                <nav id="projectList" class="space-y-2"></nav>
-            </aside>
+        <section class="panel rounded-xl p-6 mb-6">
+            <div id="statusBanner" data-base-class="hidden rounded-lg border px-4 py-3 text-sm" class="hidden rounded-lg border px-4 py-3 text-sm"></div>
+            <div class="mt-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                <p id="sessionMessage" class="text-sm text-neutral-400">Checking current session...</p>
+                <div class="flex flex-wrap gap-3">
+                    <a id="continueLink" href="dashboard.html" class="hidden rounded-lg border border-red-900/60 bg-red-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-800">Continue</a>
+                    <button id="logoutButton" type="button" onclick="logoutCurrentSession()" class="hidden rounded-lg border border-red-900/60 px-4 py-2 text-sm font-semibold text-red-400 transition hover:bg-red-950/60">Logout</button>
+                </div>
+            </div>
+        </section>
 
-            <main class="md:col-span-3">
-                <section class="panel p-6 rounded-xl min-h-[420px]">
-                    <div id="statusBanner" data-base-class="hidden mb-4 rounded-lg border px-4 py-3 text-sm" class="hidden mb-4 rounded-lg border px-4 py-3 text-sm"></div>
-                    <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between mb-6">
-                        <div>
-                            <h2 id="viewProjectName" class="text-2xl font-bold text-white mb-2">Select a project</h2>
-                            <p id="viewProjectStatus" class="text-sm text-neutral-400"></p>
-                        </div>
-                        <div class="flex gap-3">
-                            <button id="editProjectButton" onclick="openProjectModal(state.activeProjectId)" class="rounded-lg border border-neutral-800 px-4 py-2 text-sm font-semibold text-neutral-100 transition hover:bg-neutral-900 disabled:cursor-not-allowed disabled:opacity-50">Edit Project</button>
-                            <button id="deleteProjectButton" onclick="deleteActiveProject()" class="rounded-lg border border-red-900/60 px-4 py-2 text-sm font-semibold text-red-400 transition hover:bg-red-950/60 disabled:cursor-not-allowed disabled:opacity-50">Delete Project</button>
-                        </div>
+        <div class="grid gap-6 md:grid-cols-2">
+            <section class="panel rounded-xl p-6">
+                <h2 class="text-xl font-bold text-white">Admin Login</h2>
+                <p class="mt-2 text-sm text-neutral-400">Use admin credentials to manage projects, contributors, and other admin accounts.</p>
+                <p class="mt-2 text-xs text-red-200/60">Default admin: admin / admin123</p>
+                <form onsubmit="handleAdminLogin(event)" class="mt-6 space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-neutral-200">Username</label>
+                        <input type="text" id="adminUsername" required class="w-full mt-1 border border-neutral-800 bg-neutral-950 text-white rounded-lg p-2 placeholder:text-neutral-500" placeholder="admin">
                     </div>
-                    <div id="logTimeline" class="space-y-4"></div>
-                </section>
-            </main>
-        </div>
-    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-neutral-200">Password</label>
+                        <input type="password" id="adminPassword" required class="w-full mt-1 border border-neutral-800 bg-neutral-950 text-white rounded-lg p-2" placeholder="admin123">
+                    </div>
+                    <div class="flex justify-end">
+                        <button type="submit" class="bg-red-700 hover:bg-red-800 text-white px-6 py-2 rounded-lg font-semibold shadow-md danger-glow">Login as Admin</button>
+                    </div>
+                </form>
+            </section>
 
-    <div id="logModal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50">
-        <div class="panel rounded-xl shadow-xl w-full max-w-lg p-6">
-            <h2 class="text-xl font-bold mb-4 text-white">Log Daily Task</h2>
-            <form onsubmit="handleLogSubmit(event)" class="space-y-4">
-                <div>
-                    <label class="block text-sm font-medium text-neutral-200">Project</label>
-                    <select id="selectProject" required class="w-full mt-1 border border-neutral-800 bg-neutral-950 text-white rounded-lg p-2 focus:ring-red-600 focus:border-red-600"></select>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-neutral-200">Task Name</label>
-                    <input type="text" id="taskName" required class="w-full mt-1 border border-neutral-800 bg-neutral-950 text-white rounded-lg p-2 placeholder:text-neutral-500" placeholder="e.g. Design Print Proof">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-neutral-200">Status</label>
-                    <select id="taskStatus" class="w-full mt-1 border border-neutral-800 bg-neutral-950 text-white rounded-lg p-2">
-                        <option value="Done">Done</option>
-                        <option value="In Progress">In Progress</option>
-                        <option value="Blocked">Blocked</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-neutral-200">Contributor</label>
-                    <select id="selectContributor" required class="w-full mt-1 border border-neutral-800 bg-neutral-950 text-white rounded-lg p-2 focus:ring-red-600 focus:border-red-600"></select>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-neutral-200">Description</label>
-                    <textarea id="logSummary" required class="w-full mt-1 border border-neutral-800 bg-neutral-950 text-white rounded-lg p-2 h-20 placeholder:text-neutral-500" placeholder="Details of the work performed..."></textarea>
-                </div>
-                <div class="flex justify-end gap-3 mt-6">
-                    <button type="button" onclick="toggleLogModal(false)" class="text-neutral-300 font-semibold px-4 py-2 hover:bg-neutral-900 rounded-lg">Cancel</button>
-                    <button type="submit" class="bg-red-700 hover:bg-red-800 text-white px-6 py-2 rounded-lg font-semibold shadow-md danger-glow">Save Task</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <div id="projectModal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50">
-        <div class="panel rounded-xl shadow-xl w-full max-w-lg p-6">
-            <h2 id="projectModalTitle" class="text-xl font-bold mb-4 text-white">Add Project</h2>
-            <form onsubmit="handleProjectSubmit(event)" class="space-y-4">
-                <input type="hidden" id="projectIdField">
-                <div>
-                    <label class="block text-sm font-medium text-neutral-200">Project Name</label>
-                    <input type="text" id="projectName" required class="w-full mt-1 border border-neutral-800 bg-neutral-950 text-white rounded-lg p-2 placeholder:text-neutral-500" placeholder="e.g. New Branch Signage">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-neutral-200">Status</label>
-                    <select id="projectStatus" class="w-full mt-1 border border-neutral-800 bg-neutral-950 text-white rounded-lg p-2">
-                        <option value="Active">Active</option>
-                        <option value="Delayed">Delayed</option>
-                        <option value="Completed">Completed</option>
-                        <option value="On Hold">On Hold</option>
-                    </select>
-                </div>
-                <div class="flex justify-end gap-3 mt-6">
-                    <button type="button" onclick="toggleProjectModal(false)" class="text-neutral-300 font-semibold px-4 py-2 hover:bg-neutral-900 rounded-lg">Cancel</button>
-                    <button type="submit" class="bg-red-700 hover:bg-red-800 text-white px-6 py-2 rounded-lg font-semibold shadow-md danger-glow">Save Project</button>
-                </div>
-            </form>
+            <section class="panel rounded-xl p-6">
+                <h2 class="text-xl font-bold text-white">Contributor Login</h2>
+                <p class="mt-2 text-sm text-neutral-400">Select a contributor account to open the dashboard and submit task logs.</p>
+                <form onsubmit="handleContributorLogin(event)" class="mt-6 space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-neutral-200">Contributor</label>
+                        <select id="contributorSelect" required class="w-full mt-1 border border-neutral-800 bg-neutral-950 text-white rounded-lg p-2 focus:ring-red-600 focus:border-red-600">
+                            <option value="">Loading contributors...</option>
+                        </select>
+                    </div>
+                    <div class="rounded-lg border border-red-950/60 bg-neutral-950/50 px-4 py-3 text-sm text-neutral-400">
+                        Contributor login uses the managed contributor list from the database.
+                    </div>
+                    <div class="flex justify-end">
+                        <button type="submit" class="bg-red-700 hover:bg-red-800 text-white px-6 py-2 rounded-lg font-semibold shadow-md danger-glow">Login as Contributor</button>
+                    </div>
+                </form>
+            </section>
         </div>
     </div>
 
     <script>
         const state = {
-            projects: [],
             contributors: [],
-            activeProjectId: null,
-            isLoading: false
+            auth: TrackFlowCommon.normalizeAuth({})
         };
 
         function applyPayload(payload) {
-            TrackFlowCommon.applyProjectContributorPayload(state, payload);
+            state.contributors = TrackFlowCommon.normalizeArray(payload, 'contributors');
+            state.auth = TrackFlowCommon.normalizeAuth(payload);
         }
 
-        async function fetchDashboard() {
-            state.isLoading = true;
-            await TrackFlowCommon.loadPageData({
-                bannerId: 'statusBanner',
-                loadingMessage: 'Loading projects...',
-                fallbackMessage: 'Failed to load data.',
-                applyPayload,
-                onSuccess() {
-                    const activeExists = state.projects.some(project => project.id === state.activeProjectId);
+        function renderLogin() {
+            const contributorSelect = document.getElementById('contributorSelect');
+            const sessionMessage = document.getElementById('sessionMessage');
+            const continueLink = document.getElementById('continueLink');
+            const logoutButton = document.getElementById('logoutButton');
 
-                    if (state.projects.length > 0) {
-                        state.activeProjectId = activeExists ? state.activeProjectId : state.projects[0].id;
-                        TrackFlowCommon.setBanner('statusBanner');
-                        return;
-                    }
-
-                    state.activeProjectId = null;
-                    TrackFlowCommon.setBanner('statusBanner', 'No projects found in the database.', 'error');
-                },
-                onError(error) {
-                    state.projects = [];
-                    state.contributors = [];
-                    state.activeProjectId = null;
-                    TrackFlowCommon.setBanner('statusBanner', error.message || 'Unable to load data.', 'error');
-                },
-                onFinally() {
-                    state.isLoading = false;
-                },
-                render
-            });
-        }
-
-        function renderSidebar() {
-            const container = document.getElementById('projectList');
-            const select = document.getElementById('selectProject');
-            const contributorSelect = document.getElementById('selectContributor');
-
-            container.innerHTML = '';
-            select.innerHTML = '';
             contributorSelect.innerHTML = '';
-
-            if (state.projects.length === 0) {
-                container.innerHTML = '<p class="text-sm text-neutral-500">No projects available.</p>';
-                select.innerHTML = '<option value="">No projects available</option>';
-            } else {
-                state.projects.forEach(project => {
-                    const button = document.createElement('button');
-                    button.className = `w-full text-left p-3 rounded-lg border transition ${state.activeProjectId === project.id ? 'border-red-800 bg-red-950/60 text-red-100 font-semibold' : 'border-transparent text-neutral-300 hover:border-red-950 hover:bg-neutral-950'}`;
-                    button.innerText = project.name;
-                    button.onclick = () => {
-                        state.activeProjectId = project.id;
-                        render();
-                    };
-                    container.appendChild(button);
-
-                    const option = document.createElement('option');
-                    option.value = project.id;
-                    option.innerText = project.name;
-                    select.appendChild(option);
-                });
-            }
 
             if (state.contributors.length === 0) {
                 contributorSelect.innerHTML = '<option value="">No contributors available</option>';
-                return;
-            }
-
-            state.contributors.forEach(contributor => {
-                const option = document.createElement('option');
-                option.value = contributor.id;
-                option.innerText = contributor.name;
-                contributorSelect.appendChild(option);
-            });
-        }
-
-        function updateProjectActionState(project) {
-            document.getElementById('editProjectButton').disabled = !project;
-            document.getElementById('deleteProjectButton').disabled = !project;
-        }
-
-        function renderMain() {
-            const project = state.projects.find(item => item.id === state.activeProjectId);
-            updateProjectActionState(project);
-
-            if (!project) {
-                document.getElementById('viewProjectName').innerText = 'No project selected';
-                document.getElementById('viewProjectStatus').innerText = state.isLoading ? 'Loading project data...' : 'Add projects in the database to begin tracking.';
-                document.getElementById('logTimeline').innerHTML = '<p class="text-neutral-500 italic">No tasks logged yet.</p>';
-                return;
-            }
-
-            document.getElementById('viewProjectName').innerText = project.name;
-            document.getElementById('viewProjectStatus').innerHTML = `Status: <span class="px-2 py-1 bg-red-950/70 text-red-100 rounded-full text-xs font-bold uppercase border border-red-900/60">${project.status}</span>`;
-
-            const timeline = document.getElementById('logTimeline');
-            timeline.innerHTML = '';
-
-            if (project.logs.length === 0) {
-                timeline.innerHTML = '<p class="text-neutral-500 italic">No tasks logged for this project.</p>';
-                return;
-            }
-
-            project.logs.forEach(log => {
-                const statusColor = log.status === 'Done'
-                    ? 'bg-red-950/60 text-red-100 border border-red-800/50'
-                    : (log.status === 'In Progress'
-                        ? 'bg-neutral-900 text-red-200 border border-red-900/50'
-                        : 'bg-red-900/30 text-red-300 border border-red-700/50');
-
-                timeline.innerHTML += `
-                    <div class="border-l-2 border-red-700 pl-4 py-3 hover:bg-neutral-950/60 transition rounded-r-lg bg-neutral-950/30">
-                        <div class="flex justify-between items-center mb-1">
-                            <span class="text-xs text-neutral-500 font-bold uppercase">${log.date}</span>
-                            <span class="text-[10px] px-2 py-0.5 rounded-full ${statusColor}">${log.status}</span>
-                        </div>
-                        <h4 class="font-semibold text-white">${log.task}</h4>
-                        <p class="text-xs font-semibold uppercase tracking-wide text-red-300 mt-1">${log.contributorName || 'Unassigned'}</p>
-                        <p class="text-neutral-300 text-sm mt-1">${log.note}</p>
-                    </div>
-                `;
-            });
-        }
-
-        function render() {
-            renderSidebar();
-            renderMain();
-        }
-
-        function toggleLogModal(show) {
-            if (show && state.projects.length === 0) {
-                TrackFlowCommon.setBanner('statusBanner', 'Create at least one project before logging work.', 'error');
-                return;
-            }
-
-            if (show && state.contributors.length === 0) {
-                TrackFlowCommon.setBanner('statusBanner', 'Create at least one contributor on the Contributors page before logging work.', 'error');
-                return;
-            }
-
-            TrackFlowCommon.toggleHidden('logModal', show);
-        }
-
-        function toggleProjectModal(show) {
-            TrackFlowCommon.toggleHidden('projectModal', show);
-        }
-
-        function openProjectModal(projectId = null) {
-            const form = document.getElementById('projectModal').querySelector('form');
-            form.reset();
-
-            const title = document.getElementById('projectModalTitle');
-            const idField = document.getElementById('projectIdField');
-            const nameField = document.getElementById('projectName');
-            const statusField = document.getElementById('projectStatus');
-
-            if (projectId === null) {
-                title.innerText = 'Add Project';
-                idField.value = '';
-                statusField.value = 'Active';
             } else {
-                const project = state.projects.find(item => item.id === projectId);
-                if (!project) {
-                    TrackFlowCommon.setBanner('statusBanner', 'Project not found.', 'error');
-                    return;
-                }
-
-                title.innerText = 'Edit Project';
-                idField.value = project.id;
-                nameField.value = project.name;
-                statusField.value = project.status;
+                contributorSelect.innerHTML = '<option value="">Select contributor</option>';
+                state.contributors.forEach(contributor => {
+                    const option = document.createElement('option');
+                    option.value = contributor.id;
+                    option.textContent = contributor.name;
+                    contributorSelect.appendChild(option);
+                });
             }
 
-            toggleProjectModal(true);
-        }
-
-        async function handleProjectSubmit(event) {
-            event.preventDefault();
-
-            const projectId = document.getElementById('projectIdField').value;
-            const name = document.getElementById('projectName').value.trim();
-            const status = document.getElementById('projectStatus').value;
-            const isEditing = projectId !== '';
-
-            try {
-                TrackFlowCommon.setBanner('statusBanner', isEditing ? 'Updating project...' : 'Creating project...');
-
-                const payload = await TrackFlowCommon.requestJson('api.php', {
-                    method: isEditing ? 'PUT' : 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(isEditing
-                        ? { projectId: parseInt(projectId, 10), name, status }
-                        : { entity: 'project', name, status })
-                }, 'Failed to save project.');
-
-                applyPayload(payload);
-                state.activeProjectId = isEditing ? parseInt(projectId, 10) : payload.projectId;
-                toggleProjectModal(false);
-                event.target.reset();
-                TrackFlowCommon.setBanner('statusBanner', isEditing ? 'Project updated successfully.' : 'Project created successfully.');
-                render();
-            } catch (error) {
-                TrackFlowCommon.setBanner('statusBanner', error.message || 'Failed to save project.', 'error');
-            }
-        }
-
-        async function deleteActiveProject() {
-            const project = state.projects.find(item => item.id === state.activeProjectId);
-            if (!project) {
+            if (state.auth.isAdmin && state.auth.admin) {
+                sessionMessage.textContent = `Current session: admin ${state.auth.admin.username}.`;
+                continueLink.href = 'admin.html';
+                continueLink.textContent = 'Open Admin';
+                continueLink.classList.remove('hidden');
+                logoutButton.classList.remove('hidden');
                 return;
             }
 
-            if (!window.confirm(`Delete project "${project.name}" and all of its task logs?`)) {
+            if (state.auth.isContributor && state.auth.contributor) {
+                sessionMessage.textContent = `Current session: contributor ${state.auth.contributor.name}.`;
+                continueLink.href = 'dashboard.html';
+                continueLink.textContent = 'Open Dashboard';
+                continueLink.classList.remove('hidden');
+                logoutButton.classList.remove('hidden');
                 return;
             }
 
-            try {
-                TrackFlowCommon.setBanner('statusBanner', 'Deleting project...');
-
-                const payload = await TrackFlowCommon.requestJson('api.php', {
-                    method: 'DELETE',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ projectId: project.id })
-                }, 'Failed to delete project.');
-
-                applyPayload(payload);
-                state.activeProjectId = state.projects.length > 0 ? state.projects[0].id : null;
-                TrackFlowCommon.setBanner('statusBanner', 'Project deleted successfully.');
-                render();
-            } catch (error) {
-                TrackFlowCommon.setBanner('statusBanner', error.message || 'Failed to delete project.', 'error');
-            }
+            sessionMessage.textContent = 'No active session. Sign in as admin or contributor.';
+            continueLink.classList.add('hidden');
+            logoutButton.classList.add('hidden');
         }
 
-        async function handleLogSubmit(event) {
+        async function fetchLoginState() {
+            await TrackFlowCommon.loadPageData({
+                bannerId: 'statusBanner',
+                loadingMessage: 'Loading login options...',
+                fallbackMessage: 'Failed to load login state.',
+                applyPayload,
+                onSuccess() {
+                    TrackFlowCommon.setBanner('statusBanner');
+                },
+                onError(error) {
+                    applyPayload({});
+                    TrackFlowCommon.setBanner('statusBanner', error.message || 'Unable to load login state.', 'error');
+                },
+                render: renderLogin
+            });
+        }
+
+        async function handleAdminLogin(event) {
             event.preventDefault();
 
-            const projectId = parseInt(document.getElementById('selectProject').value, 10);
-            const contributorId = parseInt(document.getElementById('selectContributor').value, 10);
-            const task = document.getElementById('taskName').value;
-            const status = document.getElementById('taskStatus').value;
-            const note = document.getElementById('logSummary').value;
+            const username = document.getElementById('adminUsername').value.trim();
+            const password = document.getElementById('adminPassword').value;
 
             try {
-                TrackFlowCommon.setBanner('statusBanner', 'Saving task log...');
+                TrackFlowCommon.setBanner('statusBanner', 'Signing in admin...');
 
                 const payload = await TrackFlowCommon.requestJson('api.php', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ projectId, contributorId, task, status, note })
-                }, 'Failed to save task log.');
+                    body: JSON.stringify({ entity: 'admin-login', username, password })
+                }, 'Failed to sign in.');
 
                 applyPayload(payload);
-                state.activeProjectId = projectId;
-                toggleLogModal(false);
                 event.target.reset();
-                TrackFlowCommon.setBanner('statusBanner', 'Task log saved successfully.');
-                render();
+                window.location.href = 'admin.html';
             } catch (error) {
-                TrackFlowCommon.setBanner('statusBanner', error.message || 'Failed to save task log.', 'error');
+                TrackFlowCommon.setBanner('statusBanner', error.message || 'Failed to sign in.', 'error');
             }
         }
 
-        window.onload = fetchDashboard;
+        async function handleContributorLogin(event) {
+            event.preventDefault();
+
+            const contributorId = parseInt(document.getElementById('contributorSelect').value, 10);
+
+            try {
+                TrackFlowCommon.setBanner('statusBanner', 'Signing in contributor...');
+
+                await TrackFlowCommon.requestJson('api.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ entity: 'contributor-login', contributorId })
+                }, 'Failed to sign in.');
+
+                window.location.href = 'dashboard.html';
+            } catch (error) {
+                TrackFlowCommon.setBanner('statusBanner', error.message || 'Failed to sign in.', 'error');
+            }
+        }
+
+        async function logoutCurrentSession() {
+            try {
+                TrackFlowCommon.setBanner('statusBanner', 'Signing out...');
+
+                const payload = await TrackFlowCommon.requestJson('api.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ entity: 'logout' })
+                }, 'Failed to sign out.');
+
+                applyPayload(payload);
+                TrackFlowCommon.setBanner('statusBanner', 'Signed out successfully.');
+                renderLogin();
+            } catch (error) {
+                TrackFlowCommon.setBanner('statusBanner', error.message || 'Failed to sign out.', 'error');
+            }
+        }
+
+        window.onload = fetchLoginState;
     </script>
 </body>
 </html>

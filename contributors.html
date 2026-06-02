@@ -16,7 +16,7 @@
                 <p class="text-red-200/70">Manage the people assigned to task logs.</p>
             </div>
             <div class="flex flex-wrap items-center gap-3">
-                <a href="index.html" class="bg-neutral-950 hover:bg-neutral-900 text-red-100 px-4 py-2 rounded-lg font-semibold transition border border-red-900/60 shadow-sm">Dashboard</a>
+                <a href="dashboard.html" class="bg-neutral-950 hover:bg-neutral-900 text-red-100 px-4 py-2 rounded-lg font-semibold transition border border-red-900/60 shadow-sm">Dashboard</a>
                 <a href="admin.html" class="bg-neutral-950 hover:bg-neutral-900 text-red-100 px-4 py-2 rounded-lg font-semibold transition border border-red-900/60 shadow-sm">Admin</a>
                 <button id="addContributorButton" onclick="openContributorModal()" class="hidden bg-red-700 hover:bg-red-800 text-white px-4 py-2 rounded-lg font-semibold transition shadow-md danger-glow">+ Add Contributor</button>
             </div>
@@ -89,7 +89,7 @@
                 return;
             }
 
-            accessMessage.innerHTML = 'Contributor management is restricted to admins. Open <a href="admin.html" class="text-red-300 underline">Admin</a> to sign in.';
+            accessMessage.innerHTML = 'Contributor management is restricted to admins. Open <a href="index.html" class="text-red-300 underline">Login</a> to sign in.';
         }
 
         function renderContributors() {

@@ -7,6 +7,16 @@ session_start();
 
 header('Content-Type: application/json; charset=utf-8');
 
+function clear_auth_session(): void
+{
+    unset(
+        $_SESSION['admin_id'],
+        $_SESSION['admin_username'],
+        $_SESSION['contributor_id'],
+        $_SESSION['contributor_name']
+    );
+}
+
 function current_admin(): ?array
 {
     if (!isset($_SESSION['admin_id'], $_SESSION['admin_username'])) {
@@ -16,6 +26,33 @@ function current_admin(): ?array
     return [
         'id' => (int) $_SESSION['admin_id'],
         'username' => (string) $_SESSION['admin_username'],
+    ];
+}
+
+function current_contributor(): ?array
+{
+    if (!isset($_SESSION['contributor_id'], $_SESSION['contributor_name'])) {
+        return null;
+    }
+
+    return [
+        'id' => (int) $_SESSION['contributor_id'],
+        'name' => (string) $_SESSION['contributor_name'],
+    ];
+}
+
+function current_auth(): array
+{
+    $admin = current_admin();
+    $contributor = current_contributor();
+
+    return [
+        'isAuthenticated' => $admin !== null || $contributor !== null,
+        'role' => $admin !== null ? 'admin' : ($contributor !== null ? 'contributor' : null),
+        'isAdmin' => $admin !== null,
+        'isContributor' => $contributor !== null,
+        'admin' => $admin,
+        'contributor' => $contributor,
     ];
 }
 
@@ -33,12 +70,26 @@ function require_admin(): array
     return $admin;
 }
 
+function require_authenticated(): array
+{
+    $auth = current_auth();
+    if (!$auth['isAuthenticated']) {
+        http_response_code(403);
+        echo json_encode([
+            'message' => 'Login required.',
+        ], JSON_THROW_ON_ERROR);
+        exit;
+    }
+
+    return $auth;
+}
+
 function build_response(PDO $pdo): array
 {
-    $admin = current_admin();
+    $auth = current_auth();
     $admins = [];
 
-    if ($admin !== null) {
+    if ($auth['isAdmin']) {
         $admins = array_map(
             static fn (array $row): array => [
                 'id' => (int) $row['id'],
@@ -52,10 +103,7 @@ function build_response(PDO $pdo): array
     return [
         'projects' => fetch_projects_with_logs($pdo),
         'contributors' => fetch_contributors($pdo),
-        'auth' => [
-            'isAdmin' => $admin !== null,
-            'admin' => $admin,
-        ],
+        'auth' => $auth,
         'admins' => $admins,
     ];
 }
@@ -97,6 +145,7 @@ try {
                 exit;
             }
 
+            clear_auth_session();
             $_SESSION['admin_id'] = (int) $admin['id'];
             $_SESSION['admin_username'] = $admin['username'];
 
@@ -104,11 +153,39 @@ try {
             exit;
         }
 
-        if ($entity === 'admin-logout') {
-            $_SESSION = [];
-            if (session_id() !== '') {
-                session_destroy();
+        if ($entity === 'contributor-login') {
+            $contributorId = filter_var($payload['contributorId'] ?? null, FILTER_VALIDATE_INT);
+
+            if ($contributorId === false || $contributorId === null) {
+                http_response_code(422);
+                echo json_encode([
+                    'message' => 'Contributor selection is required.',
+                ], JSON_THROW_ON_ERROR);
+                exit;
             }
+
+            $statement = $pdo->prepare('SELECT id, name FROM contributors WHERE id = :id');
+            $statement->execute([':id' => $contributorId]);
+            $contributor = $statement->fetch();
+
+            if ($contributor === false) {
+                http_response_code(404);
+                echo json_encode([
+                    'message' => 'Contributor not found.',
+                ], JSON_THROW_ON_ERROR);
+                exit;
+            }
+
+            clear_auth_session();
+            $_SESSION['contributor_id'] = (int) $contributor['id'];
+            $_SESSION['contributor_name'] = $contributor['name'];
+
+            echo json_encode(build_response($pdo), JSON_THROW_ON_ERROR);
+            exit;
+        }
+
+        if ($entity === 'admin-logout' || $entity === 'contributor-logout' || $entity === 'logout') {
+            clear_auth_session();
 
             echo json_encode(build_response($pdo), JSON_THROW_ON_ERROR);
             exit;
@@ -152,6 +229,8 @@ try {
         }
 
         if ($entity === 'project') {
+            require_admin();
+
             $name = trim((string) ($payload['name'] ?? ''));
             $status = trim((string) ($payload['status'] ?? ''));
             $allowedProjectStatuses = ['Active', 'Delayed', 'Completed', 'On Hold'];
@@ -217,6 +296,7 @@ try {
         $task = trim((string) ($payload['task'] ?? ''));
         $status = trim((string) ($payload['status'] ?? ''));
         $note = trim((string) ($payload['note'] ?? ''));
+        $auth = require_authenticated();
 
         $allowedStatuses = ['Done', 'In Progress', 'Blocked'];
         if ($projectId === false || $projectId === null || $contributorId === false || $contributorId === null || $task === '' || $note === '' || !in_array($status, $allowedStatuses, true)) {
@@ -243,6 +323,14 @@ try {
             http_response_code(404);
             echo json_encode([
                 'message' => 'Contributor not found.',
+            ], JSON_THROW_ON_ERROR);
+            exit;
+        }
+
+        if ($auth['isContributor'] && ($auth['contributor']['id'] ?? null) !== $contributorId) {
+            http_response_code(403);
+            echo json_encode([
+                'message' => 'Contributors can only log work under their own account.',
             ], JSON_THROW_ON_ERROR);
             exit;
         }
@@ -322,6 +410,8 @@ try {
         $status = trim((string) ($payload['status'] ?? ''));
         $allowedProjectStatuses = ['Active', 'Delayed', 'Completed', 'On Hold'];
 
+        require_admin();
+
         if ($projectId === false || $projectId === null || $name === '' || !in_array($status, $allowedProjectStatuses, true)) {
             http_response_code(422);
             echo json_encode([
@@ -400,6 +490,8 @@ try {
         }
 
         $projectId = filter_var($payload['projectId'] ?? null, FILTER_VALIDATE_INT);
+
+        require_admin();
 
         if ($projectId === false || $projectId === null) {
             http_response_code(422);
