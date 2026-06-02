@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>A&T Media TrackFlow - Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="shared.js"></script>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body class="app-shell min-h-screen">
@@ -30,7 +31,7 @@
 
             <main class="md:col-span-3">
                 <section class="panel p-6 rounded-xl min-h-[420px]">
-                    <div id="statusBanner" class="hidden mb-4 rounded-lg border px-4 py-3 text-sm"></div>
+                    <div id="statusBanner" data-base-class="hidden mb-4 rounded-lg border px-4 py-3 text-sm" class="hidden mb-4 rounded-lg border px-4 py-3 text-sm"></div>
                     <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between mb-6">
                         <div>
                             <h2 id="viewProjectName" class="text-2xl font-bold text-white mb-2">Select a project</h2>
@@ -122,47 +123,27 @@
             state.contributors = Array.isArray(payload.contributors) ? payload.contributors : [];
         }
 
-        function setBanner(message = '', type = 'info') {
-            const banner = document.getElementById('statusBanner');
-            if (!message) {
-                banner.className = 'hidden mb-4 rounded-lg border px-4 py-3 text-sm';
-                banner.textContent = '';
-                return;
-            }
-
-            const typeClass = type === 'error'
-                ? 'border-red-900/70 bg-red-950/70 text-red-200'
-                : 'border-red-900/60 bg-red-950/40 text-red-100';
-            banner.className = `mb-4 rounded-lg border px-4 py-3 text-sm ${typeClass}`;
-            banner.textContent = message;
-        }
-
         async function fetchDashboard() {
             state.isLoading = true;
-            setBanner('Loading projects...');
+            TrackFlowCommon.setBanner('statusBanner', 'Loading projects...');
 
             try {
-                const response = await fetch('api.php');
-                if (!response.ok) {
-                    throw new Error('Failed to load data.');
-                }
-
-                const payload = await response.json();
+                const payload = await TrackFlowCommon.requestJson('api.php', {}, 'Failed to load data.');
                 applyPayload(payload);
 
                 if (state.projects.length > 0) {
                     const activeExists = state.projects.some(project => project.id === state.activeProjectId);
                     state.activeProjectId = activeExists ? state.activeProjectId : state.projects[0].id;
-                    setBanner('');
+                    TrackFlowCommon.setBanner('statusBanner');
                 } else {
                     state.activeProjectId = null;
-                    setBanner('No projects found in the database.', 'error');
+                    TrackFlowCommon.setBanner('statusBanner', 'No projects found in the database.', 'error');
                 }
             } catch (error) {
                 state.projects = [];
                 state.contributors = [];
                 state.activeProjectId = null;
-                setBanner(error.message || 'Unable to load data.', 'error');
+                TrackFlowCommon.setBanner('statusBanner', error.message || 'Unable to load data.', 'error');
             } finally {
                 state.isLoading = false;
                 render();
@@ -267,20 +248,20 @@
 
         function toggleLogModal(show) {
             if (show && state.projects.length === 0) {
-                setBanner('Create at least one project before logging work.', 'error');
+                TrackFlowCommon.setBanner('statusBanner', 'Create at least one project before logging work.', 'error');
                 return;
             }
 
             if (show && state.contributors.length === 0) {
-                setBanner('Create at least one contributor on the Contributors page before logging work.', 'error');
+                TrackFlowCommon.setBanner('statusBanner', 'Create at least one contributor on the Contributors page before logging work.', 'error');
                 return;
             }
 
-            document.getElementById('logModal').classList.toggle('hidden', !show);
+            TrackFlowCommon.toggleHidden('logModal', show);
         }
 
         function toggleProjectModal(show) {
-            document.getElementById('projectModal').classList.toggle('hidden', !show);
+            TrackFlowCommon.toggleHidden('projectModal', show);
         }
 
         function openProjectModal(projectId = null) {
@@ -299,7 +280,7 @@
             } else {
                 const project = state.projects.find(item => item.id === projectId);
                 if (!project) {
-                    setBanner('Project not found.', 'error');
+                    TrackFlowCommon.setBanner('statusBanner', 'Project not found.', 'error');
                     return;
                 }
 
@@ -321,29 +302,24 @@
             const isEditing = projectId !== '';
 
             try {
-                setBanner(isEditing ? 'Updating project...' : 'Creating project...');
+                TrackFlowCommon.setBanner('statusBanner', isEditing ? 'Updating project...' : 'Creating project...');
 
-                const response = await fetch('api.php', {
+                const payload = await TrackFlowCommon.requestJson('api.php', {
                     method: isEditing ? 'PUT' : 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(isEditing
                         ? { projectId: parseInt(projectId, 10), name, status }
                         : { entity: 'project', name, status })
-                });
-
-                const payload = await response.json();
-                if (!response.ok) {
-                    throw new Error(payload.message || 'Failed to save project.');
-                }
+                }, 'Failed to save project.');
 
                 applyPayload(payload);
                 state.activeProjectId = isEditing ? parseInt(projectId, 10) : payload.projectId;
                 toggleProjectModal(false);
                 event.target.reset();
-                setBanner(isEditing ? 'Project updated successfully.' : 'Project created successfully.');
+                TrackFlowCommon.setBanner('statusBanner', isEditing ? 'Project updated successfully.' : 'Project created successfully.');
                 render();
             } catch (error) {
-                setBanner(error.message || 'Failed to save project.', 'error');
+                TrackFlowCommon.setBanner('statusBanner', error.message || 'Failed to save project.', 'error');
             }
         }
 
@@ -358,25 +334,20 @@
             }
 
             try {
-                setBanner('Deleting project...');
+                TrackFlowCommon.setBanner('statusBanner', 'Deleting project...');
 
-                const response = await fetch('api.php', {
+                const payload = await TrackFlowCommon.requestJson('api.php', {
                     method: 'DELETE',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ projectId: project.id })
-                });
-
-                const payload = await response.json();
-                if (!response.ok) {
-                    throw new Error(payload.message || 'Failed to delete project.');
-                }
+                }, 'Failed to delete project.');
 
                 applyPayload(payload);
                 state.activeProjectId = state.projects.length > 0 ? state.projects[0].id : null;
-                setBanner('Project deleted successfully.');
+                TrackFlowCommon.setBanner('statusBanner', 'Project deleted successfully.');
                 render();
             } catch (error) {
-                setBanner(error.message || 'Failed to delete project.', 'error');
+                TrackFlowCommon.setBanner('statusBanner', error.message || 'Failed to delete project.', 'error');
             }
         }
 
@@ -390,27 +361,22 @@
             const note = document.getElementById('logSummary').value;
 
             try {
-                setBanner('Saving task log...');
+                TrackFlowCommon.setBanner('statusBanner', 'Saving task log...');
 
-                const response = await fetch('api.php', {
+                const payload = await TrackFlowCommon.requestJson('api.php', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ projectId, contributorId, task, status, note })
-                });
-
-                const payload = await response.json();
-                if (!response.ok) {
-                    throw new Error(payload.message || 'Failed to save task log.');
-                }
+                }, 'Failed to save task log.');
 
                 applyPayload(payload);
                 state.activeProjectId = projectId;
                 toggleLogModal(false);
                 event.target.reset();
-                setBanner('Task log saved successfully.');
+                TrackFlowCommon.setBanner('statusBanner', 'Task log saved successfully.');
                 render();
             } catch (error) {
-                setBanner(error.message || 'Failed to save task log.', 'error');
+                TrackFlowCommon.setBanner('statusBanner', error.message || 'Failed to save task log.', 'error');
             }
         }
 

@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>A&T Media TrackFlow - Contributors</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="shared.js"></script>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body class="app-shell min-h-screen">
@@ -22,7 +23,7 @@
         </header>
 
         <section class="panel p-6 rounded-xl mb-6">
-            <div id="statusBanner" class="hidden mb-4 rounded-lg border px-4 py-3 text-sm"></div>
+            <div id="statusBanner" data-base-class="hidden mb-4 rounded-lg border px-4 py-3 text-sm" class="hidden mb-4 rounded-lg border px-4 py-3 text-sm"></div>
             <h2 class="text-lg font-bold text-white mb-2">Access</h2>
             <p id="accessMessage" class="text-sm text-neutral-400">Checking admin session...</p>
         </section>
@@ -64,37 +65,16 @@
                 : { isAdmin: false, admin: null };
         }
 
-        function setBanner(message = '', type = 'info') {
-            const banner = document.getElementById('statusBanner');
-            if (!message) {
-                banner.className = 'hidden mb-4 rounded-lg border px-4 py-3 text-sm';
-                banner.textContent = '';
-                return;
-            }
-
-            const typeClass = type === 'error'
-                ? 'border-red-900/70 bg-red-950/70 text-red-200'
-                : 'border-red-900/60 bg-red-950/40 text-red-100';
-
-            banner.className = `mb-4 rounded-lg border px-4 py-3 text-sm ${typeClass}`;
-            banner.textContent = message;
-        }
-
         async function fetchContributors() {
-            setBanner('Loading contributors...');
+            TrackFlowCommon.setBanner('statusBanner', 'Loading contributors...');
 
             try {
-                const response = await fetch('api.php');
-                if (!response.ok) {
-                    throw new Error('Failed to load data.');
-                }
-
-                const payload = await response.json();
+                const payload = await TrackFlowCommon.requestJson('api.php', {}, 'Failed to load data.');
                 applyPayload(payload);
-                setBanner('');
+                TrackFlowCommon.setBanner('statusBanner');
             } catch (error) {
                 applyPayload({});
-                setBanner(error.message || 'Unable to load data.', 'error');
+                TrackFlowCommon.setBanner('statusBanner', error.message || 'Unable to load data.', 'error');
             } finally {
                 render();
             }
@@ -156,12 +136,12 @@
         }
 
         function toggleContributorModal(show) {
-            document.getElementById('contributorModal').classList.toggle('hidden', !show);
+            TrackFlowCommon.toggleHidden('contributorModal', show);
         }
 
         function openContributorModal(contributorId = null) {
             if (!state.auth.isAdmin) {
-                setBanner('Admin access required to manage contributors.', 'error');
+                TrackFlowCommon.setBanner('statusBanner', 'Admin access required to manage contributors.', 'error');
                 return;
             }
 
@@ -178,7 +158,7 @@
             } else {
                 const contributor = state.contributors.find(item => item.id === contributorId);
                 if (!contributor) {
-                    setBanner('Contributor not found.', 'error');
+                    TrackFlowCommon.setBanner('statusBanner', 'Contributor not found.', 'error');
                     return;
                 }
 
@@ -198,28 +178,23 @@
             const isEditing = contributorId !== '';
 
             try {
-                setBanner(isEditing ? 'Updating contributor...' : 'Creating contributor...');
+                TrackFlowCommon.setBanner('statusBanner', isEditing ? 'Updating contributor...' : 'Creating contributor...');
 
-                const response = await fetch('api.php', {
+                const payload = await TrackFlowCommon.requestJson('api.php', {
                     method: isEditing ? 'PUT' : 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(isEditing
                         ? { entity: 'contributor', contributorId: parseInt(contributorId, 10), name }
                         : { entity: 'contributor', name })
-                });
-
-                const payload = await response.json();
-                if (!response.ok) {
-                    throw new Error(payload.message || 'Failed to save contributor.');
-                }
+                }, 'Failed to save contributor.');
 
                 applyPayload(payload);
                 toggleContributorModal(false);
                 event.target.reset();
-                setBanner(isEditing ? 'Contributor updated successfully.' : 'Contributor added successfully.');
+                TrackFlowCommon.setBanner('statusBanner', isEditing ? 'Contributor updated successfully.' : 'Contributor added successfully.');
                 render();
             } catch (error) {
-                setBanner(error.message || 'Failed to save contributor.', 'error');
+                TrackFlowCommon.setBanner('statusBanner', error.message || 'Failed to save contributor.', 'error');
             }
         }
 
@@ -234,24 +209,19 @@
             }
 
             try {
-                setBanner('Deleting contributor...');
+                TrackFlowCommon.setBanner('statusBanner', 'Deleting contributor...');
 
-                const response = await fetch('api.php', {
+                const payload = await TrackFlowCommon.requestJson('api.php', {
                     method: 'DELETE',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ entity: 'contributor', contributorId })
-                });
-
-                const payload = await response.json();
-                if (!response.ok) {
-                    throw new Error(payload.message || 'Failed to delete contributor.');
-                }
+                }, 'Failed to delete contributor.');
 
                 applyPayload(payload);
-                setBanner('Contributor deleted successfully.');
+                TrackFlowCommon.setBanner('statusBanner', 'Contributor deleted successfully.');
                 render();
             } catch (error) {
-                setBanner(error.message || 'Failed to delete contributor.', 'error');
+                TrackFlowCommon.setBanner('statusBanner', error.message || 'Failed to delete contributor.', 'error');
             }
         }
 

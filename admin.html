@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>A&T Media TrackFlow - Admin</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="shared.js"></script>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body class="app-shell min-h-screen">
@@ -22,7 +23,7 @@
         </header>
 
         <section class="panel p-6 rounded-xl mb-6">
-            <div id="statusBanner" class="hidden mb-4 rounded-lg border px-4 py-3 text-sm"></div>
+            <div id="statusBanner" data-base-class="hidden mb-4 rounded-lg border px-4 py-3 text-sm" class="hidden mb-4 rounded-lg border px-4 py-3 text-sm"></div>
             <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between mb-4">
                 <div>
                     <h2 class="text-lg font-bold text-white">Session</h2>
@@ -86,37 +87,16 @@
                 : { isAdmin: false, admin: null };
         }
 
-        function setBanner(message = '', type = 'info') {
-            const banner = document.getElementById('statusBanner');
-            if (!message) {
-                banner.className = 'hidden mb-4 rounded-lg border px-4 py-3 text-sm';
-                banner.textContent = '';
-                return;
-            }
-
-            const typeClass = type === 'error'
-                ? 'border-red-900/70 bg-red-950/70 text-red-200'
-                : 'border-red-900/60 bg-red-950/40 text-red-100';
-
-            banner.className = `mb-4 rounded-lg border px-4 py-3 text-sm ${typeClass}`;
-            banner.textContent = message;
-        }
-
         async function fetchAdminState() {
-            setBanner('Loading admin state...');
+            TrackFlowCommon.setBanner('statusBanner', 'Loading admin state...');
 
             try {
-                const response = await fetch('api.php');
-                if (!response.ok) {
-                    throw new Error('Failed to load data.');
-                }
-
-                const payload = await response.json();
+                const payload = await TrackFlowCommon.requestJson('api.php', {}, 'Failed to load data.');
                 applyPayload(payload);
-                setBanner('');
+                TrackFlowCommon.setBanner('statusBanner');
             } catch (error) {
                 applyPayload({});
-                setBanner(error.message || 'Unable to load data.', 'error');
+                TrackFlowCommon.setBanner('statusBanner', error.message || 'Unable to load data.', 'error');
             } finally {
                 render();
             }
@@ -179,7 +159,7 @@
         }
 
         function toggleAdminModal(show) {
-            document.getElementById('adminModal').classList.toggle('hidden', !show);
+            TrackFlowCommon.toggleHidden('adminModal', show);
         }
 
         async function handleLoginSubmit(event) {
@@ -189,49 +169,39 @@
             const password = document.getElementById('loginPassword').value;
 
             try {
-                setBanner('Signing in admin...');
+                TrackFlowCommon.setBanner('statusBanner', 'Signing in admin...');
 
-                const response = await fetch('api.php', {
+                const payload = await TrackFlowCommon.requestJson('api.php', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ entity: 'admin-login', username, password })
-                });
-
-                const payload = await response.json();
-                if (!response.ok) {
-                    throw new Error(payload.message || 'Failed to sign in.');
-                }
+                }, 'Failed to sign in.');
 
                 applyPayload(payload);
                 event.target.reset();
-                setBanner(`Signed in as ${state.auth.admin.username}.`);
+                TrackFlowCommon.setBanner('statusBanner', `Signed in as ${state.auth.admin.username}.`);
                 render();
             } catch (error) {
-                setBanner(error.message || 'Failed to sign in.', 'error');
+                TrackFlowCommon.setBanner('statusBanner', error.message || 'Failed to sign in.', 'error');
             }
         }
 
         async function logoutAdmin() {
             try {
-                setBanner('Signing out admin...');
+                TrackFlowCommon.setBanner('statusBanner', 'Signing out admin...');
 
-                const response = await fetch('api.php', {
+                const payload = await TrackFlowCommon.requestJson('api.php', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ entity: 'admin-logout' })
-                });
-
-                const payload = await response.json();
-                if (!response.ok) {
-                    throw new Error(payload.message || 'Failed to sign out.');
-                }
+                }, 'Failed to sign out.');
 
                 applyPayload(payload);
                 toggleAdminModal(false);
-                setBanner('Admin session ended.');
+                TrackFlowCommon.setBanner('statusBanner', 'Admin session ended.');
                 render();
             } catch (error) {
-                setBanner(error.message || 'Failed to sign out.', 'error');
+                TrackFlowCommon.setBanner('statusBanner', error.message || 'Failed to sign out.', 'error');
             }
         }
 
@@ -242,26 +212,21 @@
             const password = document.getElementById('newAdminPassword').value;
 
             try {
-                setBanner('Creating admin...');
+                TrackFlowCommon.setBanner('statusBanner', 'Creating admin...');
 
-                const response = await fetch('api.php', {
+                const payload = await TrackFlowCommon.requestJson('api.php', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ entity: 'admin', username, password })
-                });
-
-                const payload = await response.json();
-                if (!response.ok) {
-                    throw new Error(payload.message || 'Failed to create admin.');
-                }
+                }, 'Failed to create admin.');
 
                 applyPayload(payload);
                 toggleAdminModal(false);
                 event.target.reset();
-                setBanner(`Admin ${username} created successfully.`);
+                TrackFlowCommon.setBanner('statusBanner', `Admin ${username} created successfully.`);
                 render();
             } catch (error) {
-                setBanner(error.message || 'Failed to create admin.', 'error');
+                TrackFlowCommon.setBanner('statusBanner', error.message || 'Failed to create admin.', 'error');
             }
         }
 
