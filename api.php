@@ -141,6 +141,58 @@ try {
 
     if ($method === 'PUT') {
         $payload = json_decode(file_get_contents('php://input') ?: '{}', true, 512, JSON_THROW_ON_ERROR);
+        $entity = (string) ($payload['entity'] ?? 'project');
+
+        if ($entity === 'contributor') {
+            $contributorId = filter_var($payload['contributorId'] ?? null, FILTER_VALIDATE_INT);
+            $name = trim((string) ($payload['name'] ?? ''));
+
+            if ($contributorId === false || $contributorId === null || $name === '') {
+                http_response_code(422);
+                echo json_encode([
+                    'message' => 'Invalid contributor payload.',
+                ], JSON_THROW_ON_ERROR);
+                exit;
+            }
+
+            $updateStatement = $pdo->prepare(
+                'UPDATE contributors
+                 SET name = :name
+                 WHERE id = :id'
+            );
+
+            try {
+                $updateStatement->execute([
+                    ':id' => $contributorId,
+                    ':name' => $name,
+                ]);
+            } catch (PDOException $exception) {
+                http_response_code(409);
+                echo json_encode([
+                    'message' => 'Contributor already exists.',
+                ], JSON_THROW_ON_ERROR);
+                exit;
+            }
+
+            if ($updateStatement->rowCount() === 0) {
+                $statement = $pdo->prepare('SELECT 1 FROM contributors WHERE id = :id');
+                $statement->execute([':id' => $contributorId]);
+                if ($statement->fetchColumn() === false) {
+                    http_response_code(404);
+                    echo json_encode([
+                        'message' => 'Contributor not found.',
+                    ], JSON_THROW_ON_ERROR);
+                    exit;
+                }
+            }
+
+            echo json_encode([
+                'projects' => fetch_projects_with_logs($pdo),
+                'contributors' => fetch_contributors($pdo),
+            ], JSON_THROW_ON_ERROR);
+            exit;
+        }
+
         $projectId = filter_var($payload['projectId'] ?? null, FILTER_VALIDATE_INT);
         $name = trim((string) ($payload['name'] ?? ''));
         $status = trim((string) ($payload['status'] ?? ''));
@@ -186,6 +238,47 @@ try {
 
     if ($method === 'DELETE') {
         $payload = json_decode(file_get_contents('php://input') ?: '{}', true, 512, JSON_THROW_ON_ERROR);
+        $entity = (string) ($payload['entity'] ?? 'project');
+
+        if ($entity === 'contributor') {
+            $contributorId = filter_var($payload['contributorId'] ?? null, FILTER_VALIDATE_INT);
+
+            if ($contributorId === false || $contributorId === null) {
+                http_response_code(422);
+                echo json_encode([
+                    'message' => 'Invalid contributor id.',
+                ], JSON_THROW_ON_ERROR);
+                exit;
+            }
+
+            $usageStatement = $pdo->prepare('SELECT COUNT(*) FROM logs WHERE contributor_id = :id');
+            $usageStatement->execute([':id' => $contributorId]);
+            if ((int) $usageStatement->fetchColumn() > 0) {
+                http_response_code(409);
+                echo json_encode([
+                    'message' => 'Contributor is still assigned to task logs.',
+                ], JSON_THROW_ON_ERROR);
+                exit;
+            }
+
+            $deleteStatement = $pdo->prepare('DELETE FROM contributors WHERE id = :id');
+            $deleteStatement->execute([':id' => $contributorId]);
+
+            if ($deleteStatement->rowCount() === 0) {
+                http_response_code(404);
+                echo json_encode([
+                    'message' => 'Contributor not found.',
+                ], JSON_THROW_ON_ERROR);
+                exit;
+            }
+
+            echo json_encode([
+                'projects' => fetch_projects_with_logs($pdo),
+                'contributors' => fetch_contributors($pdo),
+            ], JSON_THROW_ON_ERROR);
+            exit;
+        }
+
         $projectId = filter_var($payload['projectId'] ?? null, FILTER_VALIDATE_INT);
 
         if ($projectId === false || $projectId === null) {

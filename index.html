@@ -41,6 +41,21 @@
             </aside>
 
             <main class="md:col-span-3">
+                <section class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 mb-6">
+                    <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between mb-4">
+                        <div>
+                            <h2 class="text-lg font-bold text-gray-900">Contributors</h2>
+                            <p class="text-sm text-gray-500">Manage the people who can be assigned to task logs.</p>
+                        </div>
+                        <button onclick="openContributorModal()" class="bg-white hover:bg-gray-50 text-gray-700 px-4 py-2 rounded-lg font-semibold transition border border-gray-200 shadow-sm">
+                            + Add Contributor
+                        </button>
+                    </div>
+                    <div id="contributorList" class="space-y-3">
+                        <!-- Contributor items injected by JS -->
+                    </div>
+                </section>
+
                 <div id="projectDetail" class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 min-h-[400px]">
                     <div id="statusBanner" class="hidden mb-4 rounded-lg border px-4 py-3 text-sm"></div>
                     <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between mb-6">
@@ -132,8 +147,9 @@
 
     <div id="contributorModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
         <div class="bg-white rounded-xl shadow-xl w-full max-w-lg p-6">
-            <h2 class="text-xl font-bold mb-4">Add Contributor</h2>
+            <h2 id="contributorModalTitle" class="text-xl font-bold mb-4">Add Contributor</h2>
             <form onsubmit="handleContributorSubmit(event)" class="space-y-4">
+                <input type="hidden" id="contributorIdField">
                 <div>
                     <label class="block text-sm font-medium text-gray-700">Contributor Name</label>
                     <input type="text" id="contributorName" required class="w-full mt-1 border border-gray-300 rounded-lg p-2" placeholder="e.g. Siti Rahma">
@@ -245,6 +261,42 @@
             });
         }
 
+        function renderContributors() {
+            const container = document.getElementById('contributorList');
+            container.innerHTML = '';
+
+            if (state.contributors.length === 0) {
+                container.innerHTML = '<p class="text-sm text-gray-400">No contributors available.</p>';
+                return;
+            }
+
+            state.contributors.forEach(contributor => {
+                const usageCount = state.projects.reduce((count, project) => {
+                    return count + project.logs.filter(log => log.contributorId === contributor.id).length;
+                }, 0);
+
+                const item = document.createElement('div');
+                item.className = 'flex flex-col gap-3 rounded-lg border border-gray-100 p-4 md:flex-row md:items-center md:justify-between';
+                item.innerHTML = `
+                    <div>
+                        <h3 class="font-semibold text-gray-800">${contributor.name}</h3>
+                        <p class="text-sm text-gray-500">Assigned to ${usageCount} task${usageCount === 1 ? '' : 's'}</p>
+                    </div>
+                    <div class="flex gap-3">
+                        <button type="button" data-action="edit" data-id="${contributor.id}" class="rounded-lg border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50">Edit</button>
+                        <button type="button" data-action="delete" data-id="${contributor.id}" class="rounded-lg border border-red-200 px-4 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-50 ${usageCount > 0 ? 'opacity-50 cursor-not-allowed' : ''}" ${usageCount > 0 ? 'disabled' : ''}>Delete</button>
+                    </div>
+                `;
+
+                const editButton = item.querySelector('[data-action="edit"]');
+                const deleteButton = item.querySelector('[data-action="delete"]');
+
+                editButton.onclick = () => openContributorModal(contributor.id);
+                deleteButton.onclick = () => deleteContributor(contributor.id);
+                container.appendChild(item);
+            });
+        }
+
         function updateProjectActionState(project) {
             const editButton = document.getElementById('editProjectButton');
             const deleteButton = document.getElementById('deleteProjectButton');
@@ -293,6 +345,7 @@
 
         function render() {
             renderSidebar();
+            renderContributors();
             renderMain();
         }
 
@@ -318,8 +371,29 @@
             document.getElementById('contributorModal').classList.toggle('hidden', !show);
         }
 
-        function openContributorModal() {
-            document.getElementById('contributorModal').querySelector('form').reset();
+        function openContributorModal(contributorId = null) {
+            const form = document.getElementById('contributorModal').querySelector('form');
+            form.reset();
+
+            const title = document.getElementById('contributorModalTitle');
+            const idField = document.getElementById('contributorIdField');
+            const nameField = document.getElementById('contributorName');
+
+            if (contributorId === null) {
+                title.innerText = 'Add Contributor';
+                idField.value = '';
+            } else {
+                const contributor = state.contributors.find(item => item.id === contributorId);
+                if (!contributor) {
+                    setBanner('Contributor not found.', 'error');
+                    return;
+                }
+
+                title.innerText = 'Edit Contributor';
+                idField.value = contributor.id;
+                nameField.value = contributor.name;
+            }
+
             toggleContributorModal(true);
         }
 
@@ -431,20 +505,28 @@
 
         async function handleContributorSubmit(event) {
             event.preventDefault();
+            const contributorId = document.getElementById('contributorIdField').value;
             const name = document.getElementById('contributorName').value.trim();
+            const isEditing = contributorId !== '';
 
             try {
-                setBanner('Creating contributor...');
+                setBanner(isEditing ? 'Updating contributor...' : 'Creating contributor...');
 
                 const response = await fetch('api.php', {
-                    method: 'POST',
+                    method: isEditing ? 'PUT' : 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({
-                        entity: 'contributor',
-                        name
-                    })
+                    body: JSON.stringify(isEditing
+                        ? {
+                            entity: 'contributor',
+                            contributorId: parseInt(contributorId, 10),
+                            name
+                        }
+                        : {
+                            entity: 'contributor',
+                            name
+                        })
                 });
 
                 const payload = await response.json();
@@ -456,14 +538,53 @@
                 state.contributors = Array.isArray(payload.contributors) ? payload.contributors : [];
                 toggleContributorModal(false);
                 event.target.reset();
-                setBanner('Contributor added successfully.');
+                setBanner(isEditing ? 'Contributor updated successfully.' : 'Contributor added successfully.');
                 render();
 
-                if (payload.contributorId) {
+                if (!isEditing && payload.contributorId) {
                     document.getElementById('selectContributor').value = payload.contributorId;
                 }
             } catch (error) {
                 setBanner(error.message || 'Failed to save contributor.', 'error');
+            }
+        }
+
+        async function deleteContributor(contributorId) {
+            const contributor = state.contributors.find(item => item.id === contributorId);
+            if (!contributor) {
+                return;
+            }
+
+            const confirmed = window.confirm(`Delete contributor "${contributor.name}"?`);
+            if (!confirmed) {
+                return;
+            }
+
+            try {
+                setBanner('Deleting contributor...');
+
+                const response = await fetch('api.php', {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        entity: 'contributor',
+                        contributorId
+                    })
+                });
+
+                const payload = await response.json();
+                if (!response.ok) {
+                    throw new Error(payload.message || 'Failed to delete contributor.');
+                }
+
+                state.projects = Array.isArray(payload.projects) ? payload.projects : state.projects;
+                state.contributors = Array.isArray(payload.contributors) ? payload.contributors : [];
+                setBanner('Contributor deleted successfully.');
+                render();
+            } catch (error) {
+                setBanner(error.message || 'Failed to delete contributor.', 'error');
             }
         }
 
