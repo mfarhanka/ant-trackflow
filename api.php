@@ -12,6 +12,7 @@ try {
     if ($method === 'GET') {
         echo json_encode([
             'projects' => fetch_projects_with_logs($pdo),
+            'contributors' => fetch_contributors($pdo),
         ], JSON_THROW_ON_ERROR);
         exit;
     }
@@ -45,18 +46,52 @@ try {
             http_response_code(201);
             echo json_encode([
                 'projects' => fetch_projects_with_logs($pdo),
+                'contributors' => fetch_contributors($pdo),
                 'projectId' => (int) $pdo->lastInsertId(),
             ], JSON_THROW_ON_ERROR);
             exit;
         }
 
+        if ($entity === 'contributor') {
+            $name = trim((string) ($payload['name'] ?? ''));
+
+            if ($name === '') {
+                http_response_code(422);
+                echo json_encode([
+                    'message' => 'Contributor name is required.',
+                ], JSON_THROW_ON_ERROR);
+                exit;
+            }
+
+            $insertStatement = $pdo->prepare('INSERT INTO contributors (name) VALUES (:name)');
+
+            try {
+                $insertStatement->execute([':name' => $name]);
+            } catch (PDOException $exception) {
+                http_response_code(409);
+                echo json_encode([
+                    'message' => 'Contributor already exists.',
+                ], JSON_THROW_ON_ERROR);
+                exit;
+            }
+
+            http_response_code(201);
+            echo json_encode([
+                'projects' => fetch_projects_with_logs($pdo),
+                'contributors' => fetch_contributors($pdo),
+                'contributorId' => (int) $pdo->lastInsertId(),
+            ], JSON_THROW_ON_ERROR);
+            exit;
+        }
+
         $projectId = filter_var($payload['projectId'] ?? null, FILTER_VALIDATE_INT);
+        $contributorId = filter_var($payload['contributorId'] ?? null, FILTER_VALIDATE_INT);
         $task = trim((string) ($payload['task'] ?? ''));
         $status = trim((string) ($payload['status'] ?? ''));
         $note = trim((string) ($payload['note'] ?? ''));
 
         $allowedStatuses = ['Done', 'In Progress', 'Blocked'];
-        if ($projectId === false || $projectId === null || $task === '' || $note === '' || !in_array($status, $allowedStatuses, true)) {
+        if ($projectId === false || $projectId === null || $contributorId === false || $contributorId === null || $task === '' || $note === '' || !in_array($status, $allowedStatuses, true)) {
             http_response_code(422);
             echo json_encode([
                 'message' => 'Invalid task log payload.',
@@ -74,12 +109,23 @@ try {
             exit;
         }
 
+        $statement = $pdo->prepare('SELECT 1 FROM contributors WHERE id = :id');
+        $statement->execute([':id' => $contributorId]);
+        if ($statement->fetchColumn() === false) {
+            http_response_code(404);
+            echo json_encode([
+                'message' => 'Contributor not found.',
+            ], JSON_THROW_ON_ERROR);
+            exit;
+        }
+
         $insertStatement = $pdo->prepare(
-            'INSERT INTO logs (project_id, log_date, task, status, note)
-             VALUES (:project_id, :log_date, :task, :status, :note)'
+            'INSERT INTO logs (project_id, contributor_id, log_date, task, status, note)
+             VALUES (:project_id, :contributor_id, :log_date, :task, :status, :note)'
         );
         $insertStatement->execute([
             ':project_id' => $projectId,
+            ':contributor_id' => $contributorId,
             ':log_date' => date('Y-m-d'),
             ':task' => $task,
             ':status' => $status,
@@ -88,6 +134,7 @@ try {
 
         echo json_encode([
             'projects' => fetch_projects_with_logs($pdo),
+            'contributors' => fetch_contributors($pdo),
         ], JSON_THROW_ON_ERROR);
         exit;
     }
@@ -132,6 +179,7 @@ try {
 
         echo json_encode([
             'projects' => fetch_projects_with_logs($pdo),
+            'contributors' => fetch_contributors($pdo),
         ], JSON_THROW_ON_ERROR);
         exit;
     }
@@ -161,6 +209,7 @@ try {
 
         echo json_encode([
             'projects' => fetch_projects_with_logs($pdo),
+            'contributors' => fetch_contributors($pdo),
         ], JSON_THROW_ON_ERROR);
         exit;
     }

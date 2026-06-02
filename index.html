@@ -20,6 +20,9 @@
                 <p class="text-gray-500">Project Progress Tracker</p>
             </div>
             <div class="flex items-center gap-3">
+                <button onclick="openContributorModal()" class="bg-white hover:bg-gray-50 text-gray-700 px-4 py-2 rounded-lg font-semibold transition border border-gray-200 shadow-sm">
+                    + Add Contributor
+                </button>
                 <button onclick="openProjectModal()" class="bg-white hover:bg-gray-50 text-gray-700 px-4 py-2 rounded-lg font-semibold transition border border-gray-200 shadow-sm">
                     + Add Project
                 </button>
@@ -85,6 +88,11 @@
                     </select>
                 </div>
                 <div>
+                    <label class="block text-sm font-medium text-gray-700">Contributor</label>
+                    <select id="selectContributor" required class="w-full mt-1 border border-gray-300 rounded-lg p-2 focus:ring-blue-500 focus:border-blue-500">
+                    </select>
+                </div>
+                <div>
                     <label class="block text-sm font-medium text-gray-700">Description</label>
                     <textarea id="logSummary" required class="w-full mt-1 border border-gray-300 rounded-lg p-2 h-20" placeholder="Details of the work performed..."></textarea>
                 </div>
@@ -122,9 +130,26 @@
         </div>
     </div>
 
+    <div id="contributorModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-lg p-6">
+            <h2 class="text-xl font-bold mb-4">Add Contributor</h2>
+            <form onsubmit="handleContributorSubmit(event)" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Contributor Name</label>
+                    <input type="text" id="contributorName" required class="w-full mt-1 border border-gray-300 rounded-lg p-2" placeholder="e.g. Siti Rahma">
+                </div>
+                <div class="flex justify-end space-x-3 mt-6">
+                    <button type="button" onclick="toggleContributorModal(false)" class="text-gray-600 font-semibold px-4 py-2 hover:bg-gray-100 rounded-lg">Cancel</button>
+                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-semibold shadow-md">Save Contributor</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
         const state = {
             projects: [],
+            contributors: [],
             activeProjectId: null,
             isLoading: false,
             projectStatuses: ['Active', 'Delayed', 'Completed', 'On Hold']
@@ -159,6 +184,7 @@
 
                 const payload = await response.json();
                 state.projects = Array.isArray(payload.projects) ? payload.projects : [];
+                state.contributors = Array.isArray(payload.contributors) ? payload.contributors : [];
 
                 if (state.projects.length > 0) {
                     const activeProjectExists = state.projects.some(project => project.id === state.activeProjectId);
@@ -170,6 +196,7 @@
                 }
             } catch (error) {
                 state.projects = [];
+                state.contributors = [];
                 state.activeProjectId = null;
                 setBanner(error.message || 'Unable to load data.', 'error');
             } finally {
@@ -181,27 +208,40 @@
         function renderSidebar() {
             const container = document.getElementById('projectList');
             const select = document.getElementById('selectProject');
+            const contributorSelect = document.getElementById('selectContributor');
             
             container.innerHTML = '';
             select.innerHTML = '';
+            contributorSelect.innerHTML = '';
 
             if (state.projects.length === 0) {
                 container.innerHTML = '<p class="text-sm text-gray-400">No projects available.</p>';
                 select.innerHTML = '<option value="">No projects available</option>';
+            } else {
+                state.projects.forEach(p => {
+                    const btn = document.createElement('button');
+                    btn.className = `w-full text-left p-3 rounded-lg transition ${state.activeProjectId === p.id ? 'bg-blue-50 text-blue-700 font-semibold' : 'text-gray-600 hover:bg-gray-50'}`;
+                    btn.innerText = p.name;
+                    btn.onclick = () => { state.activeProjectId = p.id; render(); };
+                    container.appendChild(btn);
+
+                    const opt = document.createElement('option');
+                    opt.value = p.id;
+                    opt.innerText = p.name;
+                    select.appendChild(opt);
+                });
+            }
+
+            if (state.contributors.length === 0) {
+                contributorSelect.innerHTML = '<option value="">No contributors available</option>';
                 return;
             }
 
-            state.projects.forEach(p => {
-                const btn = document.createElement('button');
-                btn.className = `w-full text-left p-3 rounded-lg transition ${state.activeProjectId === p.id ? 'bg-blue-50 text-blue-700 font-semibold' : 'text-gray-600 hover:bg-gray-50'}`;
-                btn.innerText = p.name;
-                btn.onclick = () => { state.activeProjectId = p.id; render(); };
-                container.appendChild(btn);
-
-                const opt = document.createElement('option');
-                opt.value = p.id;
-                opt.innerText = p.name;
-                select.appendChild(opt);
+            state.contributors.forEach(contributor => {
+                const option = document.createElement('option');
+                option.value = contributor.id;
+                option.innerText = contributor.name;
+                contributorSelect.appendChild(option);
             });
         }
 
@@ -243,6 +283,7 @@
                                 <span class="text-[10px] px-2 py-0.5 rounded-full ${statusColor}">${log.status}</span>
                             </div>
                             <h4 class="font-semibold text-gray-800">${log.task}</h4>
+                            <p class="text-xs font-semibold uppercase tracking-wide text-blue-700 mt-1">${log.contributorName || 'Unassigned'}</p>
                             <p class="text-gray-600 text-sm mt-1">${log.note}</p>
                         </div>
                     `;
@@ -261,11 +302,25 @@
                 return;
             }
 
+            if (show && state.contributors.length === 0) {
+                setBanner('Add at least one contributor before logging work.', 'error');
+                return;
+            }
+
             document.getElementById('logModal').classList.toggle('hidden', !show);
         }
 
         function toggleProjectModal(show) {
             document.getElementById('projectModal').classList.toggle('hidden', !show);
+        }
+
+        function toggleContributorModal(show) {
+            document.getElementById('contributorModal').classList.toggle('hidden', !show);
+        }
+
+        function openContributorModal() {
+            document.getElementById('contributorModal').querySelector('form').reset();
+            toggleContributorModal(true);
         }
 
         function openProjectModal(projectId = null) {
@@ -324,6 +379,7 @@
                 }
 
                 state.projects = Array.isArray(payload.projects) ? payload.projects : [];
+                state.contributors = Array.isArray(payload.contributors) ? payload.contributors : state.contributors;
                 state.activeProjectId = isEditing ? parseInt(projectId, 10) : payload.projectId;
                 toggleProjectModal(false);
                 event.target.reset();
@@ -364,6 +420,7 @@
                 }
 
                 state.projects = Array.isArray(payload.projects) ? payload.projects : [];
+                state.contributors = Array.isArray(payload.contributors) ? payload.contributors : state.contributors;
                 state.activeProjectId = state.projects.length > 0 ? state.projects[0].id : null;
                 setBanner('Project deleted successfully.');
                 render();
@@ -372,9 +429,48 @@
             }
         }
 
+        async function handleContributorSubmit(event) {
+            event.preventDefault();
+            const name = document.getElementById('contributorName').value.trim();
+
+            try {
+                setBanner('Creating contributor...');
+
+                const response = await fetch('api.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        entity: 'contributor',
+                        name
+                    })
+                });
+
+                const payload = await response.json();
+                if (!response.ok) {
+                    throw new Error(payload.message || 'Failed to save contributor.');
+                }
+
+                state.projects = Array.isArray(payload.projects) ? payload.projects : state.projects;
+                state.contributors = Array.isArray(payload.contributors) ? payload.contributors : [];
+                toggleContributorModal(false);
+                event.target.reset();
+                setBanner('Contributor added successfully.');
+                render();
+
+                if (payload.contributorId) {
+                    document.getElementById('selectContributor').value = payload.contributorId;
+                }
+            } catch (error) {
+                setBanner(error.message || 'Failed to save contributor.', 'error');
+            }
+        }
+
         async function handleFormSubmit(e) {
             e.preventDefault();
             const projectId = parseInt(document.getElementById('selectProject').value);
+            const contributorId = parseInt(document.getElementById('selectContributor').value);
             const task = document.getElementById('taskName').value;
             const status = document.getElementById('taskStatus').value;
             const note = document.getElementById('logSummary').value;
@@ -389,6 +485,7 @@
                     },
                     body: JSON.stringify({
                         projectId,
+                        contributorId,
                         task,
                         status,
                         note
@@ -401,6 +498,7 @@
                 }
 
                 state.projects = Array.isArray(payload.projects) ? payload.projects : [];
+                state.contributors = Array.isArray(payload.contributors) ? payload.contributors : state.contributors;
                 state.activeProjectId = projectId;
                 toggleModal(false);
                 e.target.reset();
