@@ -81,10 +81,7 @@
         };
 
         function applyPayload(payload) {
-            state.admins = Array.isArray(payload.admins) ? payload.admins : [];
-            state.auth = payload.auth && typeof payload.auth === 'object'
-                ? { isAdmin: Boolean(payload.auth.isAdmin), admin: payload.auth.admin || null }
-                : { isAdmin: false, admin: null };
+            TrackFlowCommon.applyAdminPayload(state, payload);
         }
 
         async function fetchAdminState() {

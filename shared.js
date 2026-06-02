@@ -1,4 +1,29 @@
 window.TrackFlowCommon = {
+    normalizeArray(payload, key) {
+        return Array.isArray(payload[key]) ? payload[key] : [];
+    },
+
+    normalizeAuth(payload) {
+        return payload.auth && typeof payload.auth === 'object'
+            ? { isAdmin: Boolean(payload.auth.isAdmin), admin: payload.auth.admin || null }
+            : { isAdmin: false, admin: null };
+    },
+
+    applyProjectContributorPayload(state, payload) {
+        state.projects = this.normalizeArray(payload, 'projects');
+        state.contributors = this.normalizeArray(payload, 'contributors');
+    },
+
+    applyProjectContributorAuthPayload(state, payload) {
+        this.applyProjectContributorPayload(state, payload);
+        state.auth = this.normalizeAuth(payload);
+    },
+
+    applyAdminPayload(state, payload) {
+        state.admins = this.normalizeArray(payload, 'admins');
+        state.auth = this.normalizeAuth(payload);
+    },
+
     setBanner(bannerId, message = '', type = 'info') {
         const banner = document.getElementById(bannerId);
         if (!banner) {

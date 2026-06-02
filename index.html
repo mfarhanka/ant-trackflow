@@ -119,8 +119,7 @@
         };
 
         function applyPayload(payload) {
-            state.projects = Array.isArray(payload.projects) ? payload.projects : [];
-            state.contributors = Array.isArray(payload.contributors) ? payload.contributors : [];
+            TrackFlowCommon.applyProjectContributorPayload(state, payload);
         }
 
         async function fetchDashboard() {
