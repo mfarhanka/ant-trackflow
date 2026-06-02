@@ -43,6 +43,15 @@ function initialize_trackflow_database(PDO $pdo): void
     );
 
     $pdo->exec(
+        'CREATE TABLE IF NOT EXISTS admins (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT NOT NULL UNIQUE,
+            password_hash TEXT NOT NULL,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )'
+    );
+
+    $pdo->exec(
         'CREATE TABLE IF NOT EXISTS logs (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             project_id INTEGER NOT NULL,
@@ -64,6 +73,15 @@ function initialize_trackflow_database(PDO $pdo): void
         foreach (['Farhan', 'Alya', 'Rizky'] as $name) {
             $contributorStatement->execute([':name' => $name]);
         }
+    }
+
+    $adminCount = (int) $pdo->query('SELECT COUNT(*) FROM admins')->fetchColumn();
+    if ($adminCount === 0) {
+        $adminStatement = $pdo->prepare('INSERT INTO admins (username, password_hash) VALUES (:username, :password_hash)');
+        $adminStatement->execute([
+            ':username' => 'admin',
+            ':password_hash' => password_hash('admin123', PASSWORD_DEFAULT),
+        ]);
     }
 
     $projectCount = (int) $pdo->query('SELECT COUNT(*) FROM projects')->fetchColumn();
@@ -195,4 +213,18 @@ function fetch_projects_with_logs(PDO $pdo): array
     }
 
     return array_values($projectMap);
+}
+
+function fetch_admins(PDO $pdo): array
+{
+    $admins = $pdo->query('SELECT id, username, created_at FROM admins ORDER BY username COLLATE NOCASE')->fetchAll();
+
+    return array_map(
+        static fn (array $admin): array => [
+            'id' => (int) $admin['id'],
+            'username' => $admin['username'],
+            'createdAt' => $admin['created_at'],
+        ],
+        $admins
+    );
 }
