@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>A&T Media TrackFlow - Contributors</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+
+        .app-shell {
+            background:
+                radial-gradient(circle at top left, rgba(220, 38, 38, 0.18), transparent 32%),
+                radial-gradient(circle at top right, rgba(127, 29, 29, 0.24), transparent 24%),
+                linear-gradient(180deg, #0b0b0b 0%, #050505 100%);
+            color: #f5f5f5;
+        }
+
+        .panel {
+            background: rgba(18, 18, 18, 0.96);
+            border: 1px solid rgba(239, 68, 68, 0.18);
+            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.28);
+        }
+
+        .danger-glow {
+            box-shadow: 0 12px 28px rgba(185, 28, 28, 0.32);
+        }
+    </style>
+</head>
+<body class="app-shell min-h-screen">
+    <div class="max-w-5xl mx-auto p-4 md:p-8">
+        <header class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-8">
+            <div>
+                <h1 class="text-3xl font-bold text-white">Contributors</h1>
+                <p class="text-red-200/70">Manage the people assigned to task logs.</p>
+            </div>
+            <div class="flex flex-wrap items-center gap-3">
+                <a href="index.html" class="bg-neutral-950 hover:bg-neutral-900 text-red-100 px-4 py-2 rounded-lg font-semibold transition border border-red-900/60 shadow-sm">Dashboard</a>
+                <a href="admin.html" class="bg-neutral-950 hover:bg-neutral-900 text-red-100 px-4 py-2 rounded-lg font-semibold transition border border-red-900/60 shadow-sm">Admin</a>
+                <button id="addContributorButton" onclick="openContributorModal()" class="hidden bg-red-700 hover:bg-red-800 text-white px-4 py-2 rounded-lg font-semibold transition shadow-md danger-glow">+ Add Contributor</button>
+            </div>
+        </header>
+
+        <section class="panel p-6 rounded-xl mb-6">
+            <div id="statusBanner" class="hidden mb-4 rounded-lg border px-4 py-3 text-sm"></div>
+            <h2 class="text-lg font-bold text-white mb-2">Access</h2>
+            <p id="accessMessage" class="text-sm text-neutral-400">Checking admin session...</p>
+        </section>
+
+        <section class="panel p-6 rounded-xl">
+            <div id="contributorList" class="space-y-3"></div>
+        </section>
+    </div>
+
+    <div id="contributorModal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50">
+        <div class="panel rounded-xl shadow-xl w-full max-w-lg p-6">
+            <h2 id="contributorModalTitle" class="text-xl font-bold mb-4 text-white">Add Contributor</h2>
+            <form onsubmit="handleContributorSubmit(event)" class="space-y-4">
+                <input type="hidden" id="contributorIdField">
+                <div>
+                    <label class="block text-sm font-medium text-neutral-200">Contributor Name</label>
+                    <input type="text" id="contributorName" required class="w-full mt-1 border border-neutral-800 bg-neutral-950 text-white rounded-lg p-2 placeholder:text-neutral-500" placeholder="e.g. Siti Rahma">
+                </div>
+                <div class="flex justify-end gap-3 mt-6">
+                    <button type="button" onclick="toggleContributorModal(false)" class="text-neutral-300 font-semibold px-4 py-2 hover:bg-neutral-900 rounded-lg">Cancel</button>
+                    <button type="submit" class="bg-red-700 hover:bg-red-800 text-white px-6 py-2 rounded-lg font-semibold shadow-md danger-glow">Save Contributor</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const state = {
+            projects: [],
+            contributors: [],
+            auth: { isAdmin: false, admin: null }
+        };
+
+        function applyPayload(payload) {
+            state.projects = Array.isArray(payload.projects) ? payload.projects : [];
+            state.contributors = Array.isArray(payload.contributors) ? payload.contributors : [];
+            state.auth = payload.auth && typeof payload.auth === 'object'
+                ? { isAdmin: Boolean(payload.auth.isAdmin), admin: payload.auth.admin || null }
+                : { isAdmin: false, admin: null };
+        }
+
+        function setBanner(message = '', type = 'info') {
+            const banner = document.getElementById('statusBanner');
+            if (!message) {
+                banner.className = 'hidden mb-4 rounded-lg border px-4 py-3 text-sm';
+                banner.textContent = '';
+                return;
+            }
+
+            const typeClass = type === 'error'
+                ? 'border-red-900/70 bg-red-950/70 text-red-200'
+                : 'border-red-900/60 bg-red-950/40 text-red-100';
+
+            banner.className = `mb-4 rounded-lg border px-4 py-3 text-sm ${typeClass}`;
+            banner.textContent = message;
+        }
+
+        async function fetchContributors() {
+            setBanner('Loading contributors...');
+
+            try {
+                const response = await fetch('api.php');
+                if (!response.ok) {
+                    throw new Error('Failed to load data.');
+                }
+
+                const payload = await response.json();
+                applyPayload(payload);
+                setBanner('');
+            } catch (error) {
+                applyPayload({});
+                setBanner(error.message || 'Unable to load data.', 'error');
+            } finally {
+                render();
+            }
+        }
+
+        function renderAccess() {
+            const accessMessage = document.getElementById('accessMessage');
+            const addButton = document.getElementById('addContributorButton');
+
+            addButton.classList.toggle('hidden', !state.auth.isAdmin);
+
+            if (state.auth.isAdmin && state.auth.admin) {
+                accessMessage.textContent = `Signed in as ${state.auth.admin.username}. Contributor management is enabled.`;
+                return;
+            }
+
+            accessMessage.innerHTML = 'Contributor management is restricted to admins. Open <a href="admin.html" class="text-red-300 underline">Admin</a> to sign in.';
+        }
+
+        function renderContributors() {
+            const container = document.getElementById('contributorList');
+            container.innerHTML = '';
+
+            if (!state.auth.isAdmin) {
+                container.innerHTML = '<p class="text-sm text-neutral-500">Contributor editing is disabled until an admin session is active.</p>';
+                return;
+            }
+
+            if (state.contributors.length === 0) {
+                container.innerHTML = '<p class="text-sm text-neutral-500">No contributors available.</p>';
+                return;
+            }
+
+            state.contributors.forEach(contributor => {
+                const usageCount = state.projects.reduce((count, project) => count + project.logs.filter(log => log.contributorId === contributor.id).length, 0);
+
+                const item = document.createElement('div');
+                item.className = 'flex flex-col gap-3 rounded-lg border border-red-950/60 bg-neutral-950/60 p-4 md:flex-row md:items-center md:justify-between';
+                item.innerHTML = `
+                    <div>
+                        <h3 class="font-semibold text-neutral-100">${contributor.name}</h3>
+                        <p class="text-sm text-neutral-400">Assigned to ${usageCount} task${usageCount === 1 ? '' : 's'}</p>
+                    </div>
+                    <div class="flex gap-3">
+                        <button type="button" data-action="edit" data-id="${contributor.id}" class="rounded-lg border border-neutral-800 px-4 py-2 text-sm font-semibold text-neutral-100 transition hover:bg-neutral-900">Edit</button>
+                        <button type="button" data-action="delete" data-id="${contributor.id}" class="rounded-lg border border-red-900/60 px-4 py-2 text-sm font-semibold text-red-400 transition hover:bg-red-950/60 ${usageCount > 0 ? 'opacity-50 cursor-not-allowed' : ''}" ${usageCount > 0 ? 'disabled' : ''}>Delete</button>
+                    </div>
+                `;
+
+                item.querySelector('[data-action="edit"]').onclick = () => openContributorModal(contributor.id);
+                item.querySelector('[data-action="delete"]').onclick = () => deleteContributor(contributor.id);
+                container.appendChild(item);
+            });
+        }
+
+        function render() {
+            renderAccess();
+            renderContributors();
+        }
+
+        function toggleContributorModal(show) {
+            document.getElementById('contributorModal').classList.toggle('hidden', !show);
+        }
+
+        function openContributorModal(contributorId = null) {
+            if (!state.auth.isAdmin) {
+                setBanner('Admin access required to manage contributors.', 'error');
+                return;
+            }
+
+            const form = document.getElementById('contributorModal').querySelector('form');
+            form.reset();
+
+            const title = document.getElementById('contributorModalTitle');
+            const idField = document.getElementById('contributorIdField');
+            const nameField = document.getElementById('contributorName');
+
+            if (contributorId === null) {
+                title.innerText = 'Add Contributor';
+                idField.value = '';
+            } else {
+                const contributor = state.contributors.find(item => item.id === contributorId);
+                if (!contributor) {
+                    setBanner('Contributor not found.', 'error');
+                    return;
+                }
+
+                title.innerText = 'Edit Contributor';
+                idField.value = contributor.id;
+                nameField.value = contributor.name;
+            }
+
+            toggleContributorModal(true);
+        }
+
+        async function handleContributorSubmit(event) {
+            event.preventDefault();
+
+            const contributorId = document.getElementById('contributorIdField').value;
+            const name = document.getElementById('contributorName').value.trim();
+            const isEditing = contributorId !== '';
+
+            try {
+                setBanner(isEditing ? 'Updating contributor...' : 'Creating contributor...');
+
+                const response = await fetch('api.php', {
+                    method: isEditing ? 'PUT' : 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(isEditing
+                        ? { entity: 'contributor', contributorId: parseInt(contributorId, 10), name }
+                        : { entity: 'contributor', name })
+                });
+
+                const payload = await response.json();
+                if (!response.ok) {
+                    throw new Error(payload.message || 'Failed to save contributor.');
+                }
+
+                applyPayload(payload);
+                toggleContributorModal(false);
+                event.target.reset();
+                setBanner(isEditing ? 'Contributor updated successfully.' : 'Contributor added successfully.');
+                render();
+            } catch (error) {
+                setBanner(error.message || 'Failed to save contributor.', 'error');
+            }
+        }
+
+        async function deleteContributor(contributorId) {
+            const contributor = state.contributors.find(item => item.id === contributorId);
+            if (!contributor) {
+                return;
+            }
+
+            if (!window.confirm(`Delete contributor "${contributor.name}"?`)) {
+                return;
+            }
+
+            try {
+                setBanner('Deleting contributor...');
+
+                const response = await fetch('api.php', {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ entity: 'contributor', contributorId })
+                });
+
+                const payload = await response.json();
+                if (!response.ok) {
+                    throw new Error(payload.message || 'Failed to delete contributor.');
+                }
+
+                applyPayload(payload);
+                setBanner('Contributor deleted successfully.');
+                render();
+            } catch (error) {
+                setBanner(error.message || 'Failed to delete contributor.', 'error');
+            }
+        }
+
+        window.onload = fetchContributors;
+    </script>
+</body>
+</html>

@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>A&T Media TrackFlow - Admin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+
+        .app-shell {
+            background:
+                radial-gradient(circle at top left, rgba(220, 38, 38, 0.18), transparent 32%),
+                radial-gradient(circle at top right, rgba(127, 29, 29, 0.24), transparent 24%),
+                linear-gradient(180deg, #0b0b0b 0%, #050505 100%);
+            color: #f5f5f5;
+        }
+
+        .panel {
+            background: rgba(18, 18, 18, 0.96);
+            border: 1px solid rgba(239, 68, 68, 0.18);
+            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.28);
+        }
+
+        .danger-glow {
+            box-shadow: 0 12px 28px rgba(185, 28, 28, 0.32);
+        }
+    </style>
+</head>
+<body class="app-shell min-h-screen">
+    <div class="max-w-5xl mx-auto p-4 md:p-8">
+        <header class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-8">
+            <div>
+                <h1 class="text-3xl font-bold text-white">Admin</h1>
+                <p class="text-red-200/70">Sign in to manage contributor access and other admin accounts.</p>
+            </div>
+            <div class="flex flex-wrap items-center gap-3">
+                <a href="index.html" class="bg-neutral-950 hover:bg-neutral-900 text-red-100 px-4 py-2 rounded-lg font-semibold transition border border-red-900/60 shadow-sm">Dashboard</a>
+                <a href="contributors.html" class="bg-neutral-950 hover:bg-neutral-900 text-red-100 px-4 py-2 rounded-lg font-semibold transition border border-red-900/60 shadow-sm">Contributors</a>
+                <button id="logoutButton" onclick="logoutAdmin()" class="hidden rounded-lg border border-red-900/60 px-4 py-2 text-sm font-semibold text-red-400 transition hover:bg-red-950/60">Logout</button>
+            </div>
+        </header>
+
+        <section class="panel p-6 rounded-xl mb-6">
+            <div id="statusBanner" class="hidden mb-4 rounded-lg border px-4 py-3 text-sm"></div>
+            <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between mb-4">
+                <div>
+                    <h2 class="text-lg font-bold text-white">Session</h2>
+                    <p id="sessionMessage" class="text-sm text-neutral-400">Checking admin session...</p>
+                    <p id="defaultHint" class="text-xs text-red-200/60 mt-2">Default admin: admin / admin123</p>
+                </div>
+                <button id="addAdminButton" onclick="toggleAdminModal(true)" class="hidden bg-red-700 hover:bg-red-800 text-white px-4 py-2 rounded-lg font-semibold transition shadow-md danger-glow">+ Add Admin</button>
+            </div>
+
+            <form id="loginForm" onsubmit="handleLoginSubmit(event)" class="space-y-4 max-w-lg">
+                <div>
+                    <label class="block text-sm font-medium text-neutral-200">Username</label>
+                    <input type="text" id="loginUsername" required class="w-full mt-1 border border-neutral-800 bg-neutral-950 text-white rounded-lg p-2 placeholder:text-neutral-500" placeholder="admin">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-neutral-200">Password</label>
+                    <input type="password" id="loginPassword" required class="w-full mt-1 border border-neutral-800 bg-neutral-950 text-white rounded-lg p-2" placeholder="admin123">
+                </div>
+                <div class="flex justify-end">
+                    <button type="submit" class="bg-red-700 hover:bg-red-800 text-white px-6 py-2 rounded-lg font-semibold shadow-md danger-glow">Login</button>
+                </div>
+            </form>
+        </section>
+
+        <section class="panel p-6 rounded-xl">
+            <h2 class="text-lg font-bold text-white mb-4">Admin Accounts</h2>
+            <div id="adminList" class="space-y-3"></div>
+        </section>
+    </div>
+
+    <div id="adminModal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50">
+        <div class="panel rounded-xl shadow-xl w-full max-w-lg p-6">
+            <h2 class="text-xl font-bold mb-4 text-white">Add Admin</h2>
+            <form onsubmit="handleAdminSubmit(event)" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-neutral-200">Username</label>
+                    <input type="text" id="newAdminUsername" required class="w-full mt-1 border border-neutral-800 bg-neutral-950 text-white rounded-lg p-2 placeholder:text-neutral-500" placeholder="new-admin">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-neutral-200">Password</label>
+                    <input type="password" id="newAdminPassword" required class="w-full mt-1 border border-neutral-800 bg-neutral-950 text-white rounded-lg p-2" placeholder="Create a password">
+                </div>
+                <div class="flex justify-end gap-3 mt-6">
+                    <button type="button" onclick="toggleAdminModal(false)" class="text-neutral-300 font-semibold px-4 py-2 hover:bg-neutral-900 rounded-lg">Cancel</button>
+                    <button type="submit" class="bg-red-700 hover:bg-red-800 text-white px-6 py-2 rounded-lg font-semibold shadow-md danger-glow">Save Admin</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const state = {
+            admins: [],
+            auth: { isAdmin: false, admin: null }
+        };
+
+        function applyPayload(payload) {
+            state.admins = Array.isArray(payload.admins) ? payload.admins : [];
+            state.auth = payload.auth && typeof payload.auth === 'object'
+                ? { isAdmin: Boolean(payload.auth.isAdmin), admin: payload.auth.admin || null }
+                : { isAdmin: false, admin: null };
+        }
+
+        function setBanner(message = '', type = 'info') {
+            const banner = document.getElementById('statusBanner');
+            if (!message) {
+                banner.className = 'hidden mb-4 rounded-lg border px-4 py-3 text-sm';
+                banner.textContent = '';
+                return;
+            }
+
+            const typeClass = type === 'error'
+                ? 'border-red-900/70 bg-red-950/70 text-red-200'
+                : 'border-red-900/60 bg-red-950/40 text-red-100';
+
+            banner.className = `mb-4 rounded-lg border px-4 py-3 text-sm ${typeClass}`;
+            banner.textContent = message;
+        }
+
+        async function fetchAdminState() {
+            setBanner('Loading admin state...');
+
+            try {
+                const response = await fetch('api.php');
+                if (!response.ok) {
+                    throw new Error('Failed to load data.');
+                }
+
+                const payload = await response.json();
+                applyPayload(payload);
+                setBanner('');
+            } catch (error) {
+                applyPayload({});
+                setBanner(error.message || 'Unable to load data.', 'error');
+            } finally {
+                render();
+            }
+        }
+
+        function renderSession() {
+            const sessionMessage = document.getElementById('sessionMessage');
+            const defaultHint = document.getElementById('defaultHint');
+            const loginForm = document.getElementById('loginForm');
+            const addAdminButton = document.getElementById('addAdminButton');
+            const logoutButton = document.getElementById('logoutButton');
+
+            if (state.auth.isAdmin && state.auth.admin) {
+                sessionMessage.textContent = `Signed in as ${state.auth.admin.username}.`;
+                defaultHint.classList.add('hidden');
+                loginForm.classList.add('hidden');
+                addAdminButton.classList.remove('hidden');
+                logoutButton.classList.remove('hidden');
+                return;
+            }
+
+            sessionMessage.textContent = 'Sign in as an admin to manage admin accounts and contributor access.';
+            defaultHint.classList.remove('hidden');
+            loginForm.classList.remove('hidden');
+            addAdminButton.classList.add('hidden');
+            logoutButton.classList.add('hidden');
+        }
+
+        function renderAdmins() {
+            const container = document.getElementById('adminList');
+            container.innerHTML = '';
+
+            if (!state.auth.isAdmin) {
+                container.innerHTML = '<p class="text-sm text-neutral-500">Admin list becomes visible after login.</p>';
+                return;
+            }
+
+            if (state.admins.length === 0) {
+                container.innerHTML = '<p class="text-sm text-neutral-500">No admin accounts found.</p>';
+                return;
+            }
+
+            state.admins.forEach(admin => {
+                const item = document.createElement('div');
+                item.className = 'flex items-center justify-between rounded-lg border border-red-950/60 bg-neutral-950/60 p-4';
+                item.innerHTML = `
+                    <div>
+                        <h3 class="font-semibold text-neutral-100">${admin.username}</h3>
+                        <p class="text-sm text-neutral-400">Created ${admin.createdAt}</p>
+                    </div>
+                    <span class="rounded-full border border-red-900/60 bg-red-950/40 px-3 py-1 text-xs font-bold uppercase tracking-wide text-red-100">Admin</span>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        function render() {
+            renderSession();
+            renderAdmins();
+        }
+
+        function toggleAdminModal(show) {
+            document.getElementById('adminModal').classList.toggle('hidden', !show);
+        }
+
+        async function handleLoginSubmit(event) {
+            event.preventDefault();
+
+            const username = document.getElementById('loginUsername').value.trim();
+            const password = document.getElementById('loginPassword').value;
+
+            try {
+                setBanner('Signing in admin...');
+
+                const response = await fetch('api.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ entity: 'admin-login', username, password })
+                });
+
+                const payload = await response.json();
+                if (!response.ok) {
+                    throw new Error(payload.message || 'Failed to sign in.');
+                }
+
+                applyPayload(payload);
+                event.target.reset();
+                setBanner(`Signed in as ${state.auth.admin.username}.`);
+                render();
+            } catch (error) {
+                setBanner(error.message || 'Failed to sign in.', 'error');
+            }
+        }
+
+        async function logoutAdmin() {
+            try {
+                setBanner('Signing out admin...');
+
+                const response = await fetch('api.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ entity: 'admin-logout' })
+                });
+
+                const payload = await response.json();
+                if (!response.ok) {
+                    throw new Error(payload.message || 'Failed to sign out.');
+                }
+
+                applyPayload(payload);
+                toggleAdminModal(false);
+                setBanner('Admin session ended.');
+                render();
+            } catch (error) {
+                setBanner(error.message || 'Failed to sign out.', 'error');
+            }
+        }
+
+        async function handleAdminSubmit(event) {
+            event.preventDefault();
+
+            const username = document.getElementById('newAdminUsername').value.trim();
+            const password = document.getElementById('newAdminPassword').value;
+
+            try {
+                setBanner('Creating admin...');
+
+                const response = await fetch('api.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ entity: 'admin', username, password })
+                });
+
+                const payload = await response.json();
+                if (!response.ok) {
+                    throw new Error(payload.message || 'Failed to create admin.');
+                }
+
+                applyPayload(payload);
+                toggleAdminModal(false);
+                event.target.reset();
+                setBanner(`Admin ${username} created successfully.`);
+                render();
+            } catch (error) {
+                setBanner(error.message || 'Failed to create admin.', 'error');
+            }
+        }
+
+        window.onload = fetchAdminState;
+    </script>
+</body>
+</html>

@@ -3,34 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>A&T Media TrackFlow - Daily Work Log</title>
+    <title>A&T Media TrackFlow - Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
         body { font-family: 'Inter', sans-serif; }
-
-        :root {
-            --page-bg: #050505;
-            --panel-bg: rgba(18, 18, 18, 0.96);
-            --panel-border: rgba(239, 68, 68, 0.18);
-            --text-main: #f5f5f5;
-            --text-muted: #a3a3a3;
-            --accent: #dc2626;
-            --accent-strong: #991b1b;
-            --accent-soft: rgba(239, 68, 68, 0.12);
-        }
 
         .app-shell {
             background:
                 radial-gradient(circle at top left, rgba(220, 38, 38, 0.18), transparent 32%),
                 radial-gradient(circle at top right, rgba(127, 29, 29, 0.24), transparent 24%),
                 linear-gradient(180deg, #0b0b0b 0%, #050505 100%);
-            color: var(--text-main);
+            color: #f5f5f5;
         }
 
         .panel {
-            background: var(--panel-bg);
-            border: 1px solid var(--panel-border);
+            background: rgba(18, 18, 18, 0.96);
+            border: 1px solid rgba(239, 68, 68, 0.18);
             box-shadow: 0 16px 40px rgba(0, 0, 0, 0.28);
         }
 
@@ -40,80 +29,28 @@
     </style>
 </head>
 <body class="app-shell min-h-screen">
-
     <div id="app" class="max-w-5xl mx-auto p-4 md:p-8">
-        
-        <header class="flex justify-between items-center mb-8">
+        <header class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-8">
             <div>
                 <h1 class="text-3xl font-bold text-white">A&T Media TrackFlow</h1>
                 <p class="text-red-200/70">Project Progress Tracker</p>
             </div>
-            <div class="flex items-center gap-3" id="headerActions">
-                <button id="adminAccessButton" onclick="handleAdminAccess()" class="bg-neutral-950 hover:bg-neutral-900 text-red-100 px-4 py-2 rounded-lg font-semibold transition border border-red-900/60 shadow-sm">
-                    Admin Login
-                </button>
-                <button onclick="openProjectModal()" class="bg-neutral-950 hover:bg-neutral-900 text-red-100 px-4 py-2 rounded-lg font-semibold transition border border-red-900/60 shadow-sm">
-                    + Add Project
-                </button>
-                <button onclick="toggleModal(true)" class="bg-red-700 hover:bg-red-800 text-white px-4 py-2 rounded-lg font-semibold transition shadow-md hover:shadow-lg danger-glow">
-                    + Add Task Log
-                </button>
+            <div class="flex flex-wrap items-center gap-3">
+                <a href="contributors.html" class="bg-neutral-950 hover:bg-neutral-900 text-red-100 px-4 py-2 rounded-lg font-semibold transition border border-red-900/60 shadow-sm">Contributors</a>
+                <a href="admin.html" class="bg-neutral-950 hover:bg-neutral-900 text-red-100 px-4 py-2 rounded-lg font-semibold transition border border-red-900/60 shadow-sm">Admin</a>
+                <button onclick="openProjectModal()" class="bg-neutral-950 hover:bg-neutral-900 text-red-100 px-4 py-2 rounded-lg font-semibold transition border border-red-900/60 shadow-sm">+ Add Project</button>
+                <button onclick="toggleLogModal(true)" class="bg-red-700 hover:bg-red-800 text-white px-4 py-2 rounded-lg font-semibold transition shadow-md hover:shadow-lg danger-glow">+ Add Task Log</button>
             </div>
         </header>
 
         <div class="grid md:grid-cols-4 gap-6">
             <aside class="panel md:col-span-1 p-4 rounded-xl">
-                <h2 class="text-xs font-bold text-red-200/60 uppercase tracking-wider mb-4">Active Projects</h2>
-                <nav id="projectList" class="space-y-2">
-                    <!-- Sidebar links injected by JS -->
-                </nav>
+                <h2 class="text-xs font-bold text-red-200/60 uppercase tracking-wider mb-4">Projects</h2>
+                <nav id="projectList" class="space-y-2"></nav>
             </aside>
 
             <main class="md:col-span-3">
-                <section class="panel p-6 rounded-xl mb-6">
-                    <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-                        <div>
-                            <h2 class="text-lg font-bold text-white">Admin Access</h2>
-                            <p id="adminStatusText" class="text-sm text-neutral-400">Login as admin to manage contributors and create additional admin accounts.</p>
-                            <p class="text-xs text-red-200/60 mt-2">Default admin: admin / admin123</p>
-                        </div>
-                        <div class="flex gap-3" id="adminPanelActions">
-                            <button onclick="toggleAdminLoginModal(true)" class="bg-neutral-950 hover:bg-neutral-900 text-red-100 px-4 py-2 rounded-lg font-semibold transition border border-red-900/60 shadow-sm">
-                                Login
-                            </button>
-                        </div>
-                    </div>
-                </section>
-
-                <section class="panel p-6 rounded-xl mb-6">
-                    <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between mb-4">
-                        <div>
-                            <h2 class="text-lg font-bold text-white">Contributors</h2>
-                            <p class="text-sm text-neutral-400">Manage the people who can be assigned to task logs.</p>
-                        </div>
-                        <button id="addContributorButton" onclick="openContributorModal()" class="bg-neutral-950 hover:bg-neutral-900 text-red-100 px-4 py-2 rounded-lg font-semibold transition border border-red-900/60 shadow-sm">
-                            + Add Contributor
-                        </button>
-                    </div>
-                    <div id="contributorList" class="space-y-3">
-                        <!-- Contributor items injected by JS -->
-                    </div>
-                </section>
-
-                <section id="adminManagementSection" class="panel p-6 rounded-xl mb-6 hidden">
-                    <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between mb-4">
-                        <div>
-                            <h2 class="text-lg font-bold text-white">Admins</h2>
-                            <p class="text-sm text-neutral-400">Admins can manage contributors and create other admins.</p>
-                        </div>
-                        <button onclick="openAdminModal()" class="bg-neutral-950 hover:bg-neutral-900 text-red-100 px-4 py-2 rounded-lg font-semibold transition border border-red-900/60 shadow-sm">
-                            + Add Admin
-                        </button>
-                    </div>
-                    <div id="adminList" class="space-y-3"></div>
-                </section>
-
-                <div id="projectDetail" class="panel p-6 rounded-xl min-h-[400px]">
+                <section class="panel p-6 rounded-xl min-h-[420px]">
                     <div id="statusBanner" class="hidden mb-4 rounded-lg border px-4 py-3 text-sm"></div>
                     <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between mb-6">
                         <div>
@@ -121,19 +58,12 @@
                             <p id="viewProjectStatus" class="text-sm text-neutral-400"></p>
                         </div>
                         <div class="flex gap-3">
-                            <button id="editProjectButton" onclick="openProjectModal(state.activeProjectId)" class="rounded-lg border border-neutral-800 px-4 py-2 text-sm font-semibold text-neutral-100 transition hover:bg-neutral-900 disabled:cursor-not-allowed disabled:opacity-50">
-                                Edit Project
-                            </button>
-                            <button id="deleteProjectButton" onclick="deleteActiveProject()" class="rounded-lg border border-red-900/60 px-4 py-2 text-sm font-semibold text-red-400 transition hover:bg-red-950/60 disabled:cursor-not-allowed disabled:opacity-50">
-                                Delete Project
-                            </button>
+                            <button id="editProjectButton" onclick="openProjectModal(state.activeProjectId)" class="rounded-lg border border-neutral-800 px-4 py-2 text-sm font-semibold text-neutral-100 transition hover:bg-neutral-900 disabled:cursor-not-allowed disabled:opacity-50">Edit Project</button>
+                            <button id="deleteProjectButton" onclick="deleteActiveProject()" class="rounded-lg border border-red-900/60 px-4 py-2 text-sm font-semibold text-red-400 transition hover:bg-red-950/60 disabled:cursor-not-allowed disabled:opacity-50">Delete Project</button>
                         </div>
                     </div>
-                    
-                    <div id="logTimeline" class="space-y-4">
-                        <!-- Timeline items injected by JS -->
-                    </div>
-                </div>
+                    <div id="logTimeline" class="space-y-4"></div>
+                </section>
             </main>
         </div>
     </div>
@@ -141,11 +71,10 @@
     <div id="logModal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50">
         <div class="panel rounded-xl shadow-xl w-full max-w-lg p-6">
             <h2 class="text-xl font-bold mb-4 text-white">Log Daily Task</h2>
-            <form onsubmit="handleFormSubmit(event)" class="space-y-4">
+            <form onsubmit="handleLogSubmit(event)" class="space-y-4">
                 <div>
                     <label class="block text-sm font-medium text-neutral-200">Project</label>
-                    <select id="selectProject" required class="w-full mt-1 border border-neutral-800 bg-neutral-950 text-white rounded-lg p-2 focus:ring-red-600 focus:border-red-600">
-                    </select>
+                    <select id="selectProject" required class="w-full mt-1 border border-neutral-800 bg-neutral-950 text-white rounded-lg p-2 focus:ring-red-600 focus:border-red-600"></select>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-neutral-200">Task Name</label>
@@ -161,15 +90,14 @@
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-neutral-200">Contributor</label>
-                    <select id="selectContributor" required class="w-full mt-1 border border-neutral-800 bg-neutral-950 text-white rounded-lg p-2 focus:ring-red-600 focus:border-red-600">
-                    </select>
+                    <select id="selectContributor" required class="w-full mt-1 border border-neutral-800 bg-neutral-950 text-white rounded-lg p-2 focus:ring-red-600 focus:border-red-600"></select>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-neutral-200">Description</label>
                     <textarea id="logSummary" required class="w-full mt-1 border border-neutral-800 bg-neutral-950 text-white rounded-lg p-2 h-20 placeholder:text-neutral-500" placeholder="Details of the work performed..."></textarea>
                 </div>
-                <div class="flex justify-end space-x-3 mt-6">
-                    <button type="button" onclick="toggleModal(false)" class="text-neutral-300 font-semibold px-4 py-2 hover:bg-neutral-900 rounded-lg">Cancel</button>
+                <div class="flex justify-end gap-3 mt-6">
+                    <button type="button" onclick="toggleLogModal(false)" class="text-neutral-300 font-semibold px-4 py-2 hover:bg-neutral-900 rounded-lg">Cancel</button>
                     <button type="submit" class="bg-red-700 hover:bg-red-800 text-white px-6 py-2 rounded-lg font-semibold shadow-md danger-glow">Save Task</button>
                 </div>
             </form>
@@ -194,66 +122,9 @@
                         <option value="On Hold">On Hold</option>
                     </select>
                 </div>
-                <div class="flex justify-end space-x-3 mt-6">
+                <div class="flex justify-end gap-3 mt-6">
                     <button type="button" onclick="toggleProjectModal(false)" class="text-neutral-300 font-semibold px-4 py-2 hover:bg-neutral-900 rounded-lg">Cancel</button>
                     <button type="submit" class="bg-red-700 hover:bg-red-800 text-white px-6 py-2 rounded-lg font-semibold shadow-md danger-glow">Save Project</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <div id="contributorModal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50">
-        <div class="panel rounded-xl shadow-xl w-full max-w-lg p-6">
-            <h2 id="contributorModalTitle" class="text-xl font-bold mb-4 text-white">Add Contributor</h2>
-            <form onsubmit="handleContributorSubmit(event)" class="space-y-4">
-                <input type="hidden" id="contributorIdField">
-                <div>
-                    <label class="block text-sm font-medium text-neutral-200">Contributor Name</label>
-                    <input type="text" id="contributorName" required class="w-full mt-1 border border-neutral-800 bg-neutral-950 text-white rounded-lg p-2 placeholder:text-neutral-500" placeholder="e.g. Siti Rahma">
-                </div>
-                <div class="flex justify-end space-x-3 mt-6">
-                    <button type="button" onclick="toggleContributorModal(false)" class="text-neutral-300 font-semibold px-4 py-2 hover:bg-neutral-900 rounded-lg">Cancel</button>
-                    <button type="submit" class="bg-red-700 hover:bg-red-800 text-white px-6 py-2 rounded-lg font-semibold shadow-md danger-glow">Save Contributor</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <div id="adminLoginModal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50">
-        <div class="panel rounded-xl shadow-xl w-full max-w-lg p-6">
-            <h2 class="text-xl font-bold mb-4 text-white">Admin Login</h2>
-            <form onsubmit="handleAdminLoginSubmit(event)" class="space-y-4">
-                <div>
-                    <label class="block text-sm font-medium text-neutral-200">Username</label>
-                    <input type="text" id="adminLoginUsername" required class="w-full mt-1 border border-neutral-800 bg-neutral-950 text-white rounded-lg p-2 placeholder:text-neutral-500" placeholder="admin">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-neutral-200">Password</label>
-                    <input type="password" id="adminLoginPassword" required class="w-full mt-1 border border-neutral-800 bg-neutral-950 text-white rounded-lg p-2 placeholder:text-neutral-500" placeholder="Enter password">
-                </div>
-                <div class="flex justify-end space-x-3 mt-6">
-                    <button type="button" onclick="toggleAdminLoginModal(false)" class="text-neutral-300 font-semibold px-4 py-2 hover:bg-neutral-900 rounded-lg">Cancel</button>
-                    <button type="submit" class="bg-red-700 hover:bg-red-800 text-white px-6 py-2 rounded-lg font-semibold shadow-md danger-glow">Login</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <div id="adminModal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50">
-        <div class="panel rounded-xl shadow-xl w-full max-w-lg p-6">
-            <h2 class="text-xl font-bold mb-4 text-white">Add Admin</h2>
-            <form onsubmit="handleAdminSubmit(event)" class="space-y-4">
-                <div>
-                    <label class="block text-sm font-medium text-neutral-200">Username</label>
-                    <input type="text" id="adminUsername" required class="w-full mt-1 border border-neutral-800 bg-neutral-950 text-white rounded-lg p-2 placeholder:text-neutral-500" placeholder="e.g. supervisor">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-neutral-200">Password</label>
-                    <input type="password" id="adminPassword" required class="w-full mt-1 border border-neutral-800 bg-neutral-950 text-white rounded-lg p-2 placeholder:text-neutral-500" placeholder="Create password">
-                </div>
-                <div class="flex justify-end space-x-3 mt-6">
-                    <button type="button" onclick="toggleAdminModal(false)" class="text-neutral-300 font-semibold px-4 py-2 hover:bg-neutral-900 rounded-lg">Cancel</button>
-                    <button type="submit" class="bg-red-700 hover:bg-red-800 text-white px-6 py-2 rounded-lg font-semibold shadow-md danger-glow">Save Admin</button>
                 </div>
             </form>
         </div>
@@ -263,19 +134,17 @@
         const state = {
             projects: [],
             contributors: [],
-            admins: [],
-            auth: {
-                isAdmin: false,
-                admin: null
-            },
             activeProjectId: null,
-            isLoading: false,
-            projectStatuses: ['Active', 'Delayed', 'Completed', 'On Hold']
+            isLoading: false
         };
+
+        function applyPayload(payload) {
+            state.projects = Array.isArray(payload.projects) ? payload.projects : [];
+            state.contributors = Array.isArray(payload.contributors) ? payload.contributors : [];
+        }
 
         function setBanner(message = '', type = 'info') {
             const banner = document.getElementById('statusBanner');
-
             if (!message) {
                 banner.className = 'hidden mb-4 rounded-lg border px-4 py-3 text-sm';
                 banner.textContent = '';
@@ -285,12 +154,11 @@
             const typeClass = type === 'error'
                 ? 'border-red-900/70 bg-red-950/70 text-red-200'
                 : 'border-red-900/60 bg-red-950/40 text-red-100';
-
             banner.className = `mb-4 rounded-lg border px-4 py-3 text-sm ${typeClass}`;
             banner.textContent = message;
         }
 
-        async function fetchProjects() {
+        async function fetchDashboard() {
             state.isLoading = true;
             setBanner('Loading projects...');
 
@@ -301,14 +169,11 @@
                 }
 
                 const payload = await response.json();
-                state.projects = Array.isArray(payload.projects) ? payload.projects : [];
-                state.contributors = Array.isArray(payload.contributors) ? payload.contributors : [];
-                state.admins = Array.isArray(payload.admins) ? payload.admins : [];
-                state.auth = payload.auth || { isAdmin: false, admin: null };
+                applyPayload(payload);
 
                 if (state.projects.length > 0) {
-                    const activeProjectExists = state.projects.some(project => project.id === state.activeProjectId);
-                    state.activeProjectId = activeProjectExists ? state.activeProjectId : state.projects[0].id;
+                    const activeExists = state.projects.some(project => project.id === state.activeProjectId);
+                    state.activeProjectId = activeExists ? state.activeProjectId : state.projects[0].id;
                     setBanner('');
                 } else {
                     state.activeProjectId = null;
@@ -317,8 +182,6 @@
             } catch (error) {
                 state.projects = [];
                 state.contributors = [];
-                state.admins = [];
-                state.auth = { isAdmin: false, admin: null };
                 state.activeProjectId = null;
                 setBanner(error.message || 'Unable to load data.', 'error');
             } finally {
@@ -331,7 +194,7 @@
             const container = document.getElementById('projectList');
             const select = document.getElementById('selectProject');
             const contributorSelect = document.getElementById('selectContributor');
-            
+
             container.innerHTML = '';
             select.innerHTML = '';
             contributorSelect.innerHTML = '';
@@ -340,17 +203,20 @@
                 container.innerHTML = '<p class="text-sm text-neutral-500">No projects available.</p>';
                 select.innerHTML = '<option value="">No projects available</option>';
             } else {
-                state.projects.forEach(p => {
-                    const btn = document.createElement('button');
-                    btn.className = `w-full text-left p-3 rounded-lg border transition ${state.activeProjectId === p.id ? 'border-red-800 bg-red-950/60 text-red-100 font-semibold' : 'border-transparent text-neutral-300 hover:border-red-950 hover:bg-neutral-950'}`;
-                    btn.innerText = p.name;
-                    btn.onclick = () => { state.activeProjectId = p.id; render(); };
-                    container.appendChild(btn);
+                state.projects.forEach(project => {
+                    const button = document.createElement('button');
+                    button.className = `w-full text-left p-3 rounded-lg border transition ${state.activeProjectId === project.id ? 'border-red-800 bg-red-950/60 text-red-100 font-semibold' : 'border-transparent text-neutral-300 hover:border-red-950 hover:bg-neutral-950'}`;
+                    button.innerText = project.name;
+                    button.onclick = () => {
+                        state.activeProjectId = project.id;
+                        render();
+                    };
+                    container.appendChild(button);
 
-                    const opt = document.createElement('option');
-                    opt.value = p.id;
-                    opt.innerText = p.name;
-                    select.appendChild(opt);
+                    const option = document.createElement('option');
+                    option.value = project.id;
+                    option.innerText = project.name;
+                    select.appendChild(option);
                 });
             }
 
@@ -367,160 +233,67 @@
             });
         }
 
-        function renderContributors() {
-            const container = document.getElementById('contributorList');
-            const addButton = document.getElementById('addContributorButton');
-            container.innerHTML = '';
-
-            addButton.classList.toggle('hidden', !state.auth.isAdmin);
-
-            if (!state.auth.isAdmin) {
-                container.innerHTML = '<p class="text-sm text-neutral-500">Admin login is required to manage contributors.</p>';
-                return;
-            }
-
-            if (state.contributors.length === 0) {
-                container.innerHTML = '<p class="text-sm text-neutral-500">No contributors available.</p>';
-                return;
-            }
-
-            state.contributors.forEach(contributor => {
-                const usageCount = state.projects.reduce((count, project) => {
-                    return count + project.logs.filter(log => log.contributorId === contributor.id).length;
-                }, 0);
-
-                const item = document.createElement('div');
-                item.className = 'flex flex-col gap-3 rounded-lg border border-red-950/60 bg-neutral-950/60 p-4 md:flex-row md:items-center md:justify-between';
-                item.innerHTML = `
-                    <div>
-                        <h3 class="font-semibold text-neutral-100">${contributor.name}</h3>
-                        <p class="text-sm text-neutral-400">Assigned to ${usageCount} task${usageCount === 1 ? '' : 's'}</p>
-                    </div>
-                    <div class="flex gap-3">
-                        <button type="button" data-action="edit" data-id="${contributor.id}" class="rounded-lg border border-neutral-800 px-4 py-2 text-sm font-semibold text-neutral-100 transition hover:bg-neutral-900">Edit</button>
-                        <button type="button" data-action="delete" data-id="${contributor.id}" class="rounded-lg border border-red-900/60 px-4 py-2 text-sm font-semibold text-red-400 transition hover:bg-red-950/60 ${usageCount > 0 ? 'opacity-50 cursor-not-allowed' : ''}" ${usageCount > 0 ? 'disabled' : ''}>Delete</button>
-                    </div>
-                `;
-
-                const editButton = item.querySelector('[data-action="edit"]');
-                const deleteButton = item.querySelector('[data-action="delete"]');
-
-                editButton.onclick = () => openContributorModal(contributor.id);
-                deleteButton.onclick = () => deleteContributor(contributor.id);
-                container.appendChild(item);
-            });
-        }
-
-        function renderAdmins() {
-            const section = document.getElementById('adminManagementSection');
-            const list = document.getElementById('adminList');
-
-            if (!state.auth.isAdmin) {
-                section.classList.add('hidden');
-                list.innerHTML = '';
-                return;
-            }
-
-            section.classList.remove('hidden');
-            list.innerHTML = '';
-
-            state.admins.forEach(admin => {
-                const item = document.createElement('div');
-                item.className = 'flex flex-col gap-2 rounded-lg border border-red-950/60 bg-neutral-950/60 p-4 md:flex-row md:items-center md:justify-between';
-                item.innerHTML = `
-                    <div>
-                        <h3 class="font-semibold text-neutral-100">${admin.username}</h3>
-                        <p class="text-sm text-neutral-400">Created ${admin.createdAt}</p>
-                    </div>
-                    <span class="inline-flex items-center rounded-full border border-red-900/60 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-red-200">Admin</span>
-                `;
-                list.appendChild(item);
-            });
-        }
-
-        function renderAdminAccess() {
-            const statusText = document.getElementById('adminStatusText');
-            const headerButton = document.getElementById('adminAccessButton');
-            const panelActions = document.getElementById('adminPanelActions');
-
-            if (state.auth.isAdmin && state.auth.admin) {
-                statusText.textContent = `Logged in as ${state.auth.admin.username}. Contributor management and admin creation are enabled.`;
-                headerButton.textContent = 'Admin Logout';
-                panelActions.innerHTML = `
-                    <span class="inline-flex items-center rounded-lg border border-red-900/60 px-4 py-2 text-sm font-semibold text-red-100 bg-red-950/30">${state.auth.admin.username}</span>
-                    <button onclick="logoutAdmin()" class="bg-neutral-950 hover:bg-neutral-900 text-red-100 px-4 py-2 rounded-lg font-semibold transition border border-red-900/60 shadow-sm">Logout</button>
-                `;
-            } else {
-                statusText.textContent = 'Login as admin to manage contributors and create additional admin accounts.';
-                headerButton.textContent = 'Admin Login';
-                panelActions.innerHTML = `
-                    <button onclick="toggleAdminLoginModal(true)" class="bg-neutral-950 hover:bg-neutral-900 text-red-100 px-4 py-2 rounded-lg font-semibold transition border border-red-900/60 shadow-sm">Login</button>
-                `;
-            }
-        }
-
         function updateProjectActionState(project) {
-            const editButton = document.getElementById('editProjectButton');
-            const deleteButton = document.getElementById('deleteProjectButton');
-            const disabled = !project;
-
-            editButton.disabled = disabled;
-            deleteButton.disabled = disabled;
+            document.getElementById('editProjectButton').disabled = !project;
+            document.getElementById('deleteProjectButton').disabled = !project;
         }
 
         function renderMain() {
-            const project = state.projects.find(p => p.id === state.activeProjectId);
+            const project = state.projects.find(item => item.id === state.activeProjectId);
             updateProjectActionState(project);
 
             if (!project) {
                 document.getElementById('viewProjectName').innerText = 'No project selected';
-                document.getElementById('viewProjectStatus').innerText = state.isLoading ? 'Loading project data...' : 'Add projects in the SQLite database to begin tracking.';
+                document.getElementById('viewProjectStatus').innerText = state.isLoading ? 'Loading project data...' : 'Add projects in the database to begin tracking.';
                 document.getElementById('logTimeline').innerHTML = '<p class="text-neutral-500 italic">No tasks logged yet.</p>';
                 return;
             }
 
             document.getElementById('viewProjectName').innerText = project.name;
             document.getElementById('viewProjectStatus').innerHTML = `Status: <span class="px-2 py-1 bg-red-950/70 text-red-100 rounded-full text-xs font-bold uppercase border border-red-900/60">${project.status}</span>`;
-            
+
             const timeline = document.getElementById('logTimeline');
             timeline.innerHTML = '';
-            
+
             if (project.logs.length === 0) {
                 timeline.innerHTML = '<p class="text-neutral-500 italic">No tasks logged for this project.</p>';
-            } else {
-                project.logs.forEach(log => {
-                    const statusColor = log.status === 'Done' ? 'bg-red-950/60 text-red-100 border border-red-800/50' : (log.status === 'In Progress' ? 'bg-neutral-900 text-red-200 border border-red-900/50' : 'bg-red-900/30 text-red-300 border border-red-700/50');
-                    timeline.innerHTML += `
-                        <div class="border-l-2 border-red-700 pl-4 py-3 hover:bg-neutral-950/60 transition rounded-r-lg bg-neutral-950/30">
-                            <div class="flex justify-between items-center mb-1">
-                                <span class="text-xs text-neutral-500 font-bold uppercase">${log.date}</span>
-                                <span class="text-[10px] px-2 py-0.5 rounded-full ${statusColor}">${log.status}</span>
-                            </div>
-                            <h4 class="font-semibold text-white">${log.task}</h4>
-                            <p class="text-xs font-semibold uppercase tracking-wide text-red-300 mt-1">${log.contributorName || 'Unassigned'}</p>
-                            <p class="text-neutral-300 text-sm mt-1">${log.note}</p>
-                        </div>
-                    `;
-                });
+                return;
             }
+
+            project.logs.forEach(log => {
+                const statusColor = log.status === 'Done'
+                    ? 'bg-red-950/60 text-red-100 border border-red-800/50'
+                    : (log.status === 'In Progress'
+                        ? 'bg-neutral-900 text-red-200 border border-red-900/50'
+                        : 'bg-red-900/30 text-red-300 border border-red-700/50');
+
+                timeline.innerHTML += `
+                    <div class="border-l-2 border-red-700 pl-4 py-3 hover:bg-neutral-950/60 transition rounded-r-lg bg-neutral-950/30">
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-xs text-neutral-500 font-bold uppercase">${log.date}</span>
+                            <span class="text-[10px] px-2 py-0.5 rounded-full ${statusColor}">${log.status}</span>
+                        </div>
+                        <h4 class="font-semibold text-white">${log.task}</h4>
+                        <p class="text-xs font-semibold uppercase tracking-wide text-red-300 mt-1">${log.contributorName || 'Unassigned'}</p>
+                        <p class="text-neutral-300 text-sm mt-1">${log.note}</p>
+                    </div>
+                `;
+            });
         }
 
         function render() {
-            renderAdminAccess();
             renderSidebar();
-            renderContributors();
-            renderAdmins();
             renderMain();
         }
 
-        function toggleModal(show) {
+        function toggleLogModal(show) {
             if (show && state.projects.length === 0) {
-                setBanner('Create or seed at least one project before logging work.', 'error');
+                setBanner('Create at least one project before logging work.', 'error');
                 return;
             }
 
             if (show && state.contributors.length === 0) {
-                setBanner('Add at least one contributor before logging work.', 'error');
+                setBanner('Create at least one contributor on the Contributors page before logging work.', 'error');
                 return;
             }
 
@@ -529,68 +302,6 @@
 
         function toggleProjectModal(show) {
             document.getElementById('projectModal').classList.toggle('hidden', !show);
-        }
-
-        function toggleContributorModal(show) {
-            document.getElementById('contributorModal').classList.toggle('hidden', !show);
-        }
-
-        function toggleAdminLoginModal(show) {
-            document.getElementById('adminLoginModal').classList.toggle('hidden', !show);
-        }
-
-        function toggleAdminModal(show) {
-            document.getElementById('adminModal').classList.toggle('hidden', !show);
-        }
-
-        function handleAdminAccess() {
-            if (state.auth.isAdmin) {
-                logoutAdmin();
-                return;
-            }
-
-            toggleAdminLoginModal(true);
-        }
-
-        function openContributorModal(contributorId = null) {
-            if (!state.auth.isAdmin) {
-                setBanner('Admin login is required to manage contributors.', 'error');
-                return;
-            }
-
-            const form = document.getElementById('contributorModal').querySelector('form');
-            form.reset();
-
-            const title = document.getElementById('contributorModalTitle');
-            const idField = document.getElementById('contributorIdField');
-            const nameField = document.getElementById('contributorName');
-
-            if (contributorId === null) {
-                title.innerText = 'Add Contributor';
-                idField.value = '';
-            } else {
-                const contributor = state.contributors.find(item => item.id === contributorId);
-                if (!contributor) {
-                    setBanner('Contributor not found.', 'error');
-                    return;
-                }
-
-                title.innerText = 'Edit Contributor';
-                idField.value = contributor.id;
-                nameField.value = contributor.name;
-            }
-
-            toggleContributorModal(true);
-        }
-
-        function openAdminModal() {
-            if (!state.auth.isAdmin) {
-                setBanner('Admin login is required to add another admin.', 'error');
-                return;
-            }
-
-            document.getElementById('adminModal').querySelector('form').reset();
-            toggleAdminModal(true);
         }
 
         function openProjectModal(projectId = null) {
@@ -635,9 +346,7 @@
 
                 const response = await fetch('api.php', {
                     method: isEditing ? 'PUT' : 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(isEditing
                         ? { projectId: parseInt(projectId, 10), name, status }
                         : { entity: 'project', name, status })
@@ -648,8 +357,7 @@
                     throw new Error(payload.message || 'Failed to save project.');
                 }
 
-                state.projects = Array.isArray(payload.projects) ? payload.projects : [];
-                state.contributors = Array.isArray(payload.contributors) ? payload.contributors : state.contributors;
+                applyPayload(payload);
                 state.activeProjectId = isEditing ? parseInt(projectId, 10) : payload.projectId;
                 toggleProjectModal(false);
                 event.target.reset();
@@ -666,8 +374,7 @@
                 return;
             }
 
-            const confirmed = window.confirm(`Delete project "${project.name}" and all of its task logs?`);
-            if (!confirmed) {
+            if (!window.confirm(`Delete project "${project.name}" and all of its task logs?`)) {
                 return;
             }
 
@@ -676,12 +383,8 @@
 
                 const response = await fetch('api.php', {
                     method: 'DELETE',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        projectId: project.id
-                    })
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ projectId: project.id })
                 });
 
                 const payload = await response.json();
@@ -689,8 +392,7 @@
                     throw new Error(payload.message || 'Failed to delete project.');
                 }
 
-                state.projects = Array.isArray(payload.projects) ? payload.projects : [];
-                state.contributors = Array.isArray(payload.contributors) ? payload.contributors : state.contributors;
+                applyPayload(payload);
                 state.activeProjectId = state.projects.length > 0 ? state.projects[0].id : null;
                 setBanner('Project deleted successfully.');
                 render();
@@ -699,201 +401,11 @@
             }
         }
 
-        async function handleContributorSubmit(event) {
+        async function handleLogSubmit(event) {
             event.preventDefault();
-            const contributorId = document.getElementById('contributorIdField').value;
-            const name = document.getElementById('contributorName').value.trim();
-            const isEditing = contributorId !== '';
 
-            try {
-                setBanner(isEditing ? 'Updating contributor...' : 'Creating contributor...');
-
-                const response = await fetch('api.php', {
-                    method: isEditing ? 'PUT' : 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(isEditing
-                        ? {
-                            entity: 'contributor',
-                            contributorId: parseInt(contributorId, 10),
-                            name
-                        }
-                        : {
-                            entity: 'contributor',
-                            name
-                        })
-                });
-
-                const payload = await response.json();
-                if (!response.ok) {
-                    throw new Error(payload.message || 'Failed to save contributor.');
-                }
-
-                state.projects = Array.isArray(payload.projects) ? payload.projects : state.projects;
-                state.contributors = Array.isArray(payload.contributors) ? payload.contributors : [];
-                toggleContributorModal(false);
-                event.target.reset();
-                setBanner(isEditing ? 'Contributor updated successfully.' : 'Contributor added successfully.');
-                render();
-
-                if (!isEditing && payload.contributorId) {
-                    document.getElementById('selectContributor').value = payload.contributorId;
-                }
-            } catch (error) {
-                setBanner(error.message || 'Failed to save contributor.', 'error');
-            }
-        }
-
-        async function handleAdminLoginSubmit(event) {
-            event.preventDefault();
-            const username = document.getElementById('adminLoginUsername').value.trim();
-            const password = document.getElementById('adminLoginPassword').value;
-
-            try {
-                setBanner('Signing in as admin...');
-
-                const response = await fetch('api.php', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        entity: 'admin-login',
-                        username,
-                        password
-                    })
-                });
-
-                const payload = await response.json();
-                if (!response.ok) {
-                    throw new Error(payload.message || 'Failed to login.');
-                }
-
-                state.projects = Array.isArray(payload.projects) ? payload.projects : state.projects;
-                state.contributors = Array.isArray(payload.contributors) ? payload.contributors : state.contributors;
-                state.admins = Array.isArray(payload.admins) ? payload.admins : [];
-                state.auth = payload.auth || { isAdmin: false, admin: null };
-                toggleAdminLoginModal(false);
-                event.target.reset();
-                setBanner('Admin login successful.');
-                render();
-            } catch (error) {
-                setBanner(error.message || 'Failed to login.', 'error');
-            }
-        }
-
-        async function logoutAdmin() {
-            try {
-                setBanner('Signing out admin...');
-
-                const response = await fetch('api.php', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        entity: 'admin-logout'
-                    })
-                });
-
-                const payload = await response.json();
-                if (!response.ok) {
-                    throw new Error(payload.message || 'Failed to logout.');
-                }
-
-                state.projects = Array.isArray(payload.projects) ? payload.projects : state.projects;
-                state.contributors = Array.isArray(payload.contributors) ? payload.contributors : state.contributors;
-                state.admins = Array.isArray(payload.admins) ? payload.admins : [];
-                state.auth = payload.auth || { isAdmin: false, admin: null };
-                setBanner('Admin logged out.');
-                render();
-            } catch (error) {
-                setBanner(error.message || 'Failed to logout.', 'error');
-            }
-        }
-
-        async function handleAdminSubmit(event) {
-            event.preventDefault();
-            const username = document.getElementById('adminUsername').value.trim();
-            const password = document.getElementById('adminPassword').value;
-
-            try {
-                setBanner('Creating admin...');
-
-                const response = await fetch('api.php', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        entity: 'admin',
-                        username,
-                        password
-                    })
-                });
-
-                const payload = await response.json();
-                if (!response.ok) {
-                    throw new Error(payload.message || 'Failed to create admin.');
-                }
-
-                state.projects = Array.isArray(payload.projects) ? payload.projects : state.projects;
-                state.contributors = Array.isArray(payload.contributors) ? payload.contributors : state.contributors;
-                state.admins = Array.isArray(payload.admins) ? payload.admins : [];
-                state.auth = payload.auth || state.auth;
-                toggleAdminModal(false);
-                event.target.reset();
-                setBanner('Admin created successfully.');
-                render();
-            } catch (error) {
-                setBanner(error.message || 'Failed to create admin.', 'error');
-            }
-        }
-
-        async function deleteContributor(contributorId) {
-            const contributor = state.contributors.find(item => item.id === contributorId);
-            if (!contributor) {
-                return;
-            }
-
-            const confirmed = window.confirm(`Delete contributor "${contributor.name}"?`);
-            if (!confirmed) {
-                return;
-            }
-
-            try {
-                setBanner('Deleting contributor...');
-
-                const response = await fetch('api.php', {
-                    method: 'DELETE',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        entity: 'contributor',
-                        contributorId
-                    })
-                });
-
-                const payload = await response.json();
-                if (!response.ok) {
-                    throw new Error(payload.message || 'Failed to delete contributor.');
-                }
-
-                state.projects = Array.isArray(payload.projects) ? payload.projects : state.projects;
-                state.contributors = Array.isArray(payload.contributors) ? payload.contributors : [];
-                setBanner('Contributor deleted successfully.');
-                render();
-            } catch (error) {
-                setBanner(error.message || 'Failed to delete contributor.', 'error');
-            }
-        }
-
-        async function handleFormSubmit(e) {
-            e.preventDefault();
-            const projectId = parseInt(document.getElementById('selectProject').value);
-            const contributorId = parseInt(document.getElementById('selectContributor').value);
+            const projectId = parseInt(document.getElementById('selectProject').value, 10);
+            const contributorId = parseInt(document.getElementById('selectContributor').value, 10);
             const task = document.getElementById('taskName').value;
             const status = document.getElementById('taskStatus').value;
             const note = document.getElementById('logSummary').value;
@@ -903,16 +415,8 @@
 
                 const response = await fetch('api.php', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        projectId,
-                        contributorId,
-                        task,
-                        status,
-                        note
-                    })
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ projectId, contributorId, task, status, note })
                 });
 
                 const payload = await response.json();
@@ -920,11 +424,10 @@
                     throw new Error(payload.message || 'Failed to save task log.');
                 }
 
-                state.projects = Array.isArray(payload.projects) ? payload.projects : [];
-                state.contributors = Array.isArray(payload.contributors) ? payload.contributors : state.contributors;
+                applyPayload(payload);
                 state.activeProjectId = projectId;
-                toggleModal(false);
-                e.target.reset();
+                toggleLogModal(false);
+                event.target.reset();
                 setBanner('Task log saved successfully.');
                 render();
             } catch (error) {
@@ -932,7 +435,7 @@
             }
         }
 
-        window.onload = fetchProjects;
+        window.onload = fetchDashboard;
     </script>
 </body>
 </html>
