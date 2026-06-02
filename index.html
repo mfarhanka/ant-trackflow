@@ -34,6 +34,7 @@
 
             <main class="md:col-span-3">
                 <div id="projectDetail" class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 min-h-[400px]">
+                    <div id="statusBanner" class="hidden mb-4 rounded-lg border px-4 py-3 text-sm"></div>
                     <h2 id="viewProjectName" class="text-2xl font-bold text-gray-900 mb-2">Select a project</h2>
                     <p id="viewProjectStatus" class="text-sm text-gray-500 mb-6"></p>
                     
@@ -80,13 +81,58 @@
 
     <script>
         const state = {
-            projects: [
-                { id: 1, name: "Shop Signage", status: "Active", logs: [{ date: "2026-06-02", task: "Site Survey", status: "Done", note: "Measurements finalized." }] },
-                { id: 2, name: "Renovation Phase 2", status: "Delayed", logs: [{ date: "2026-06-01", task: "Plumbing", status: "Done", note: "Pipe installation complete." }] },
-                { id: 3, name: "Inventory Audit", status: "Active", logs: [] }
-            ],
-            activeProjectId: 1
+            projects: [],
+            activeProjectId: null,
+            isLoading: false
         };
+
+        function setBanner(message = '', type = 'info') {
+            const banner = document.getElementById('statusBanner');
+
+            if (!message) {
+                banner.className = 'hidden mb-4 rounded-lg border px-4 py-3 text-sm';
+                banner.textContent = '';
+                return;
+            }
+
+            const typeClass = type === 'error'
+                ? 'border-red-200 bg-red-50 text-red-700'
+                : 'border-blue-200 bg-blue-50 text-blue-700';
+
+            banner.className = `mb-4 rounded-lg border px-4 py-3 text-sm ${typeClass}`;
+            banner.textContent = message;
+        }
+
+        async function fetchProjects() {
+            state.isLoading = true;
+            setBanner('Loading projects...');
+
+            try {
+                const response = await fetch('api.php');
+                if (!response.ok) {
+                    throw new Error('Failed to load data.');
+                }
+
+                const payload = await response.json();
+                state.projects = Array.isArray(payload.projects) ? payload.projects : [];
+
+                if (state.projects.length > 0) {
+                    const activeProjectExists = state.projects.some(project => project.id === state.activeProjectId);
+                    state.activeProjectId = activeProjectExists ? state.activeProjectId : state.projects[0].id;
+                    setBanner('');
+                } else {
+                    state.activeProjectId = null;
+                    setBanner('No projects found in the database.', 'error');
+                }
+            } catch (error) {
+                state.projects = [];
+                state.activeProjectId = null;
+                setBanner(error.message || 'Unable to load data.', 'error');
+            } finally {
+                state.isLoading = false;
+                render();
+            }
+        }
 
         function renderSidebar() {
             const container = document.getElementById('projectList');
@@ -94,6 +140,12 @@
             
             container.innerHTML = '';
             select.innerHTML = '';
+
+            if (state.projects.length === 0) {
+                container.innerHTML = '<p class="text-sm text-gray-400">No projects available.</p>';
+                select.innerHTML = '<option value="">No projects available</option>';
+                return;
+            }
 
             state.projects.forEach(p => {
                 const btn = document.createElement('button');
@@ -111,6 +163,14 @@
 
         function renderMain() {
             const project = state.projects.find(p => p.id === state.activeProjectId);
+
+            if (!project) {
+                document.getElementById('viewProjectName').innerText = 'No project selected';
+                document.getElementById('viewProjectStatus').innerText = state.isLoading ? 'Loading project data...' : 'Add projects in the SQLite database to begin tracking.';
+                document.getElementById('logTimeline').innerHTML = '<p class="text-gray-400 italic">No tasks logged yet.</p>';
+                return;
+            }
+
             document.getElementById('viewProjectName').innerText = project.name;
             document.getElementById('viewProjectStatus').innerHTML = `Status: <span class="px-2 py-1 bg-gray-100 rounded-full text-xs font-bold uppercase">${project.status}</span>`;
             
@@ -142,26 +202,54 @@
         }
 
         function toggleModal(show) {
+            if (show && state.projects.length === 0) {
+                setBanner('Create or seed at least one project before logging work.', 'error');
+                return;
+            }
+
             document.getElementById('logModal').classList.toggle('hidden', !show);
         }
 
-        function handleFormSubmit(e) {
+        async function handleFormSubmit(e) {
             e.preventDefault();
             const projectId = parseInt(document.getElementById('selectProject').value);
             const task = document.getElementById('taskName').value;
             const status = document.getElementById('taskStatus').value;
             const note = document.getElementById('logSummary').value;
-            const date = new Date().toISOString().split('T')[0];
 
-            const project = state.projects.find(p => p.id === projectId);
-            project.logs.unshift({ date, task, status, note });
-            
-            toggleModal(false);
-            render();
-            e.target.reset();
+            try {
+                setBanner('Saving task log...');
+
+                const response = await fetch('api.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        projectId,
+                        task,
+                        status,
+                        note
+                    })
+                });
+
+                const payload = await response.json();
+                if (!response.ok) {
+                    throw new Error(payload.message || 'Failed to save task log.');
+                }
+
+                state.projects = Array.isArray(payload.projects) ? payload.projects : [];
+                state.activeProjectId = projectId;
+                toggleModal(false);
+                e.target.reset();
+                setBanner('Task log saved successfully.');
+                render();
+            } catch (error) {
+                setBanner(error.message || 'Failed to save task log.', 'error');
+            }
         }
 
-        window.onload = render;
+        window.onload = fetchProjects;
     </script>
 </body>
 </html>
