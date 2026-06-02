@@ -19,9 +19,14 @@
                 <h1 class="text-3xl font-bold text-gray-900">A&T Media TrackFlow</h1>
                 <p class="text-gray-500">Project Progress Tracker</p>
             </div>
-            <button onclick="toggleModal(true)" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-semibold transition shadow-md hover:shadow-lg">
-                + Add Task Log
-            </button>
+            <div class="flex items-center gap-3">
+                <button onclick="openProjectModal()" class="bg-white hover:bg-gray-50 text-gray-700 px-4 py-2 rounded-lg font-semibold transition border border-gray-200 shadow-sm">
+                    + Add Project
+                </button>
+                <button onclick="toggleModal(true)" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-semibold transition shadow-md hover:shadow-lg">
+                    + Add Task Log
+                </button>
+            </div>
         </header>
 
         <div class="grid md:grid-cols-4 gap-6">
@@ -35,8 +40,20 @@
             <main class="md:col-span-3">
                 <div id="projectDetail" class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 min-h-[400px]">
                     <div id="statusBanner" class="hidden mb-4 rounded-lg border px-4 py-3 text-sm"></div>
-                    <h2 id="viewProjectName" class="text-2xl font-bold text-gray-900 mb-2">Select a project</h2>
-                    <p id="viewProjectStatus" class="text-sm text-gray-500 mb-6"></p>
+                    <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between mb-6">
+                        <div>
+                            <h2 id="viewProjectName" class="text-2xl font-bold text-gray-900 mb-2">Select a project</h2>
+                            <p id="viewProjectStatus" class="text-sm text-gray-500"></p>
+                        </div>
+                        <div class="flex gap-3">
+                            <button id="editProjectButton" onclick="openProjectModal(state.activeProjectId)" class="rounded-lg border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50">
+                                Edit Project
+                            </button>
+                            <button id="deleteProjectButton" onclick="deleteActiveProject()" class="rounded-lg border border-red-200 px-4 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50">
+                                Delete Project
+                            </button>
+                        </div>
+                    </div>
                     
                     <div id="logTimeline" class="space-y-4">
                         <!-- Timeline items injected by JS -->
@@ -79,11 +96,38 @@
         </div>
     </div>
 
+    <div id="projectModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-lg p-6">
+            <h2 id="projectModalTitle" class="text-xl font-bold mb-4">Add Project</h2>
+            <form onsubmit="handleProjectSubmit(event)" class="space-y-4">
+                <input type="hidden" id="projectIdField">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Project Name</label>
+                    <input type="text" id="projectName" required class="w-full mt-1 border border-gray-300 rounded-lg p-2" placeholder="e.g. New Branch Signage">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Status</label>
+                    <select id="projectStatus" class="w-full mt-1 border border-gray-300 rounded-lg p-2">
+                        <option value="Active">Active</option>
+                        <option value="Delayed">Delayed</option>
+                        <option value="Completed">Completed</option>
+                        <option value="On Hold">On Hold</option>
+                    </select>
+                </div>
+                <div class="flex justify-end space-x-3 mt-6">
+                    <button type="button" onclick="toggleProjectModal(false)" class="text-gray-600 font-semibold px-4 py-2 hover:bg-gray-100 rounded-lg">Cancel</button>
+                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-semibold shadow-md">Save Project</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
         const state = {
             projects: [],
             activeProjectId: null,
-            isLoading: false
+            isLoading: false,
+            projectStatuses: ['Active', 'Delayed', 'Completed', 'On Hold']
         };
 
         function setBanner(message = '', type = 'info') {
@@ -161,8 +205,18 @@
             });
         }
 
+        function updateProjectActionState(project) {
+            const editButton = document.getElementById('editProjectButton');
+            const deleteButton = document.getElementById('deleteProjectButton');
+            const disabled = !project;
+
+            editButton.disabled = disabled;
+            deleteButton.disabled = disabled;
+        }
+
         function renderMain() {
             const project = state.projects.find(p => p.id === state.activeProjectId);
+            updateProjectActionState(project);
 
             if (!project) {
                 document.getElementById('viewProjectName').innerText = 'No project selected';
@@ -208,6 +262,114 @@
             }
 
             document.getElementById('logModal').classList.toggle('hidden', !show);
+        }
+
+        function toggleProjectModal(show) {
+            document.getElementById('projectModal').classList.toggle('hidden', !show);
+        }
+
+        function openProjectModal(projectId = null) {
+            const form = document.getElementById('projectModal').querySelector('form');
+            form.reset();
+
+            const title = document.getElementById('projectModalTitle');
+            const idField = document.getElementById('projectIdField');
+            const nameField = document.getElementById('projectName');
+            const statusField = document.getElementById('projectStatus');
+
+            if (projectId === null) {
+                title.innerText = 'Add Project';
+                idField.value = '';
+                statusField.value = 'Active';
+            } else {
+                const project = state.projects.find(item => item.id === projectId);
+                if (!project) {
+                    setBanner('Project not found.', 'error');
+                    return;
+                }
+
+                title.innerText = 'Edit Project';
+                idField.value = project.id;
+                nameField.value = project.name;
+                statusField.value = project.status;
+            }
+
+            toggleProjectModal(true);
+        }
+
+        async function handleProjectSubmit(event) {
+            event.preventDefault();
+
+            const projectId = document.getElementById('projectIdField').value;
+            const name = document.getElementById('projectName').value.trim();
+            const status = document.getElementById('projectStatus').value;
+            const isEditing = projectId !== '';
+
+            try {
+                setBanner(isEditing ? 'Updating project...' : 'Creating project...');
+
+                const response = await fetch('api.php', {
+                    method: isEditing ? 'PUT' : 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(isEditing
+                        ? { projectId: parseInt(projectId, 10), name, status }
+                        : { entity: 'project', name, status })
+                });
+
+                const payload = await response.json();
+                if (!response.ok) {
+                    throw new Error(payload.message || 'Failed to save project.');
+                }
+
+                state.projects = Array.isArray(payload.projects) ? payload.projects : [];
+                state.activeProjectId = isEditing ? parseInt(projectId, 10) : payload.projectId;
+                toggleProjectModal(false);
+                event.target.reset();
+                setBanner(isEditing ? 'Project updated successfully.' : 'Project created successfully.');
+                render();
+            } catch (error) {
+                setBanner(error.message || 'Failed to save project.', 'error');
+            }
+        }
+
+        async function deleteActiveProject() {
+            const project = state.projects.find(item => item.id === state.activeProjectId);
+            if (!project) {
+                return;
+            }
+
+            const confirmed = window.confirm(`Delete project "${project.name}" and all of its task logs?`);
+            if (!confirmed) {
+                return;
+            }
+
+            try {
+                setBanner('Deleting project...');
+
+                const response = await fetch('api.php', {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        projectId: project.id
+                    })
+                });
+
+                const payload = await response.json();
+                if (!response.ok) {
+                    throw new Error(payload.message || 'Failed to delete project.');
+                }
+
+                state.projects = Array.isArray(payload.projects) ? payload.projects : [];
+                state.activeProjectId = state.projects.length > 0 ? state.projects[0].id : null;
+                setBanner('Project deleted successfully.');
+                render();
+            } catch (error) {
+                setBanner(error.message || 'Failed to delete project.', 'error');
+            }
         }
 
         async function handleFormSubmit(e) {

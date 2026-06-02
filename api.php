@@ -7,16 +7,48 @@ header('Content-Type: application/json; charset=utf-8');
 
 try {
     $pdo = trackflow_db();
+    $method = $_SERVER['REQUEST_METHOD'];
 
-    if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+    if ($method === 'GET') {
         echo json_encode([
             'projects' => fetch_projects_with_logs($pdo),
         ], JSON_THROW_ON_ERROR);
         exit;
     }
 
-    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if ($method === 'POST') {
         $payload = json_decode(file_get_contents('php://input') ?: '{}', true, 512, JSON_THROW_ON_ERROR);
+        $entity = (string) ($payload['entity'] ?? 'log');
+
+        if ($entity === 'project') {
+            $name = trim((string) ($payload['name'] ?? ''));
+            $status = trim((string) ($payload['status'] ?? ''));
+            $allowedProjectStatuses = ['Active', 'Delayed', 'Completed', 'On Hold'];
+
+            if ($name === '' || !in_array($status, $allowedProjectStatuses, true)) {
+                http_response_code(422);
+                echo json_encode([
+                    'message' => 'Invalid project payload.',
+                ], JSON_THROW_ON_ERROR);
+                exit;
+            }
+
+            $insertStatement = $pdo->prepare(
+                'INSERT INTO projects (name, status)
+                 VALUES (:name, :status)'
+            );
+            $insertStatement->execute([
+                ':name' => $name,
+                ':status' => $status,
+            ]);
+
+            http_response_code(201);
+            echo json_encode([
+                'projects' => fetch_projects_with_logs($pdo),
+                'projectId' => (int) $pdo->lastInsertId(),
+            ], JSON_THROW_ON_ERROR);
+            exit;
+        }
 
         $projectId = filter_var($payload['projectId'] ?? null, FILTER_VALIDATE_INT);
         $task = trim((string) ($payload['task'] ?? ''));
@@ -60,8 +92,81 @@ try {
         exit;
     }
 
+    if ($method === 'PUT') {
+        $payload = json_decode(file_get_contents('php://input') ?: '{}', true, 512, JSON_THROW_ON_ERROR);
+        $projectId = filter_var($payload['projectId'] ?? null, FILTER_VALIDATE_INT);
+        $name = trim((string) ($payload['name'] ?? ''));
+        $status = trim((string) ($payload['status'] ?? ''));
+        $allowedProjectStatuses = ['Active', 'Delayed', 'Completed', 'On Hold'];
+
+        if ($projectId === false || $projectId === null || $name === '' || !in_array($status, $allowedProjectStatuses, true)) {
+            http_response_code(422);
+            echo json_encode([
+                'message' => 'Invalid project payload.',
+            ], JSON_THROW_ON_ERROR);
+            exit;
+        }
+
+        $updateStatement = $pdo->prepare(
+            'UPDATE projects
+             SET name = :name, status = :status
+             WHERE id = :id'
+        );
+        $updateStatement->execute([
+            ':id' => $projectId,
+            ':name' => $name,
+            ':status' => $status,
+        ]);
+
+        if ($updateStatement->rowCount() === 0) {
+            $statement = $pdo->prepare('SELECT 1 FROM projects WHERE id = :id');
+            $statement->execute([':id' => $projectId]);
+            if ($statement->fetchColumn() === false) {
+                http_response_code(404);
+                echo json_encode([
+                    'message' => 'Project not found.',
+                ], JSON_THROW_ON_ERROR);
+                exit;
+            }
+        }
+
+        echo json_encode([
+            'projects' => fetch_projects_with_logs($pdo),
+        ], JSON_THROW_ON_ERROR);
+        exit;
+    }
+
+    if ($method === 'DELETE') {
+        $payload = json_decode(file_get_contents('php://input') ?: '{}', true, 512, JSON_THROW_ON_ERROR);
+        $projectId = filter_var($payload['projectId'] ?? null, FILTER_VALIDATE_INT);
+
+        if ($projectId === false || $projectId === null) {
+            http_response_code(422);
+            echo json_encode([
+                'message' => 'Invalid project id.',
+            ], JSON_THROW_ON_ERROR);
+            exit;
+        }
+
+        $deleteStatement = $pdo->prepare('DELETE FROM projects WHERE id = :id');
+        $deleteStatement->execute([':id' => $projectId]);
+
+        if ($deleteStatement->rowCount() === 0) {
+            http_response_code(404);
+            echo json_encode([
+                'message' => 'Project not found.',
+            ], JSON_THROW_ON_ERROR);
+            exit;
+        }
+
+        echo json_encode([
+            'projects' => fetch_projects_with_logs($pdo),
+        ], JSON_THROW_ON_ERROR);
+        exit;
+    }
+
     http_response_code(405);
-    header('Allow: GET, POST');
+    header('Allow: GET, POST, PUT, DELETE');
     echo json_encode([
         'message' => 'Method not allowed.',
     ], JSON_THROW_ON_ERROR);
