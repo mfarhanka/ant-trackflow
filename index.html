@@ -8,46 +8,75 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
         body { font-family: 'Inter', sans-serif; }
+
+        :root {
+            --page-bg: #050505;
+            --panel-bg: rgba(18, 18, 18, 0.96);
+            --panel-border: rgba(239, 68, 68, 0.18);
+            --text-main: #f5f5f5;
+            --text-muted: #a3a3a3;
+            --accent: #dc2626;
+            --accent-strong: #991b1b;
+            --accent-soft: rgba(239, 68, 68, 0.12);
+        }
+
+        .app-shell {
+            background:
+                radial-gradient(circle at top left, rgba(220, 38, 38, 0.18), transparent 32%),
+                radial-gradient(circle at top right, rgba(127, 29, 29, 0.24), transparent 24%),
+                linear-gradient(180deg, #0b0b0b 0%, #050505 100%);
+            color: var(--text-main);
+        }
+
+        .panel {
+            background: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.28);
+        }
+
+        .danger-glow {
+            box-shadow: 0 12px 28px rgba(185, 28, 28, 0.32);
+        }
     </style>
 </head>
-<body class="bg-gray-50 min-h-screen">
+<body class="app-shell min-h-screen">
 
     <div id="app" class="max-w-5xl mx-auto p-4 md:p-8">
         
         <header class="flex justify-between items-center mb-8">
             <div>
-                <h1 class="text-3xl font-bold text-gray-900">A&T Media TrackFlow</h1>
-                <p class="text-gray-500">Project Progress Tracker</p>
+                <h1 class="text-3xl font-bold text-white">A&T Media TrackFlow</h1>
+                <p class="text-red-200/70">Project Progress Tracker</p>
             </div>
             <div class="flex items-center gap-3">
-                <button onclick="openContributorModal()" class="bg-white hover:bg-gray-50 text-gray-700 px-4 py-2 rounded-lg font-semibold transition border border-gray-200 shadow-sm">
+                <button onclick="openContributorModal()" class="bg-neutral-950 hover:bg-neutral-900 text-red-100 px-4 py-2 rounded-lg font-semibold transition border border-red-900/60 shadow-sm">
                     + Add Contributor
                 </button>
-                <button onclick="openProjectModal()" class="bg-white hover:bg-gray-50 text-gray-700 px-4 py-2 rounded-lg font-semibold transition border border-gray-200 shadow-sm">
+                <button onclick="openProjectModal()" class="bg-neutral-950 hover:bg-neutral-900 text-red-100 px-4 py-2 rounded-lg font-semibold transition border border-red-900/60 shadow-sm">
                     + Add Project
                 </button>
-                <button onclick="toggleModal(true)" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-semibold transition shadow-md hover:shadow-lg">
+                <button onclick="toggleModal(true)" class="bg-red-700 hover:bg-red-800 text-white px-4 py-2 rounded-lg font-semibold transition shadow-md hover:shadow-lg danger-glow">
                     + Add Task Log
                 </button>
             </div>
         </header>
 
         <div class="grid md:grid-cols-4 gap-6">
-            <aside class="md:col-span-1 bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-                <h2 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">Active Projects</h2>
+            <aside class="panel md:col-span-1 p-4 rounded-xl">
+                <h2 class="text-xs font-bold text-red-200/60 uppercase tracking-wider mb-4">Active Projects</h2>
                 <nav id="projectList" class="space-y-2">
                     <!-- Sidebar links injected by JS -->
                 </nav>
             </aside>
 
             <main class="md:col-span-3">
-                <section class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 mb-6">
+                <section class="panel p-6 rounded-xl mb-6">
                     <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between mb-4">
                         <div>
-                            <h2 class="text-lg font-bold text-gray-900">Contributors</h2>
-                            <p class="text-sm text-gray-500">Manage the people who can be assigned to task logs.</p>
+                            <h2 class="text-lg font-bold text-white">Contributors</h2>
+                            <p class="text-sm text-neutral-400">Manage the people who can be assigned to task logs.</p>
                         </div>
-                        <button onclick="openContributorModal()" class="bg-white hover:bg-gray-50 text-gray-700 px-4 py-2 rounded-lg font-semibold transition border border-gray-200 shadow-sm">
+                        <button onclick="openContributorModal()" class="bg-neutral-950 hover:bg-neutral-900 text-red-100 px-4 py-2 rounded-lg font-semibold transition border border-red-900/60 shadow-sm">
                             + Add Contributor
                         </button>
                     </div>
@@ -56,18 +85,18 @@
                     </div>
                 </section>
 
-                <div id="projectDetail" class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 min-h-[400px]">
+                <div id="projectDetail" class="panel p-6 rounded-xl min-h-[400px]">
                     <div id="statusBanner" class="hidden mb-4 rounded-lg border px-4 py-3 text-sm"></div>
                     <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between mb-6">
                         <div>
-                            <h2 id="viewProjectName" class="text-2xl font-bold text-gray-900 mb-2">Select a project</h2>
-                            <p id="viewProjectStatus" class="text-sm text-gray-500"></p>
+                            <h2 id="viewProjectName" class="text-2xl font-bold text-white mb-2">Select a project</h2>
+                            <p id="viewProjectStatus" class="text-sm text-neutral-400"></p>
                         </div>
                         <div class="flex gap-3">
-                            <button id="editProjectButton" onclick="openProjectModal(state.activeProjectId)" class="rounded-lg border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50">
+                            <button id="editProjectButton" onclick="openProjectModal(state.activeProjectId)" class="rounded-lg border border-neutral-800 px-4 py-2 text-sm font-semibold text-neutral-100 transition hover:bg-neutral-900 disabled:cursor-not-allowed disabled:opacity-50">
                                 Edit Project
                             </button>
-                            <button id="deleteProjectButton" onclick="deleteActiveProject()" class="rounded-lg border border-red-200 px-4 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50">
+                            <button id="deleteProjectButton" onclick="deleteActiveProject()" class="rounded-lg border border-red-900/60 px-4 py-2 text-sm font-semibold text-red-400 transition hover:bg-red-950/60 disabled:cursor-not-allowed disabled:opacity-50">
                                 Delete Project
                             </button>
                         </div>
@@ -81,56 +110,56 @@
         </div>
     </div>
 
-    <div id="logModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-        <div class="bg-white rounded-xl shadow-xl w-full max-w-lg p-6">
-            <h2 class="text-xl font-bold mb-4">Log Daily Task</h2>
+    <div id="logModal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50">
+        <div class="panel rounded-xl shadow-xl w-full max-w-lg p-6">
+            <h2 class="text-xl font-bold mb-4 text-white">Log Daily Task</h2>
             <form onsubmit="handleFormSubmit(event)" class="space-y-4">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700">Project</label>
-                    <select id="selectProject" required class="w-full mt-1 border border-gray-300 rounded-lg p-2 focus:ring-blue-500 focus:border-blue-500">
+                    <label class="block text-sm font-medium text-neutral-200">Project</label>
+                    <select id="selectProject" required class="w-full mt-1 border border-neutral-800 bg-neutral-950 text-white rounded-lg p-2 focus:ring-red-600 focus:border-red-600">
                     </select>
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700">Task Name</label>
-                    <input type="text" id="taskName" required class="w-full mt-1 border border-gray-300 rounded-lg p-2" placeholder="e.g. Design Print Proof">
+                    <label class="block text-sm font-medium text-neutral-200">Task Name</label>
+                    <input type="text" id="taskName" required class="w-full mt-1 border border-neutral-800 bg-neutral-950 text-white rounded-lg p-2 placeholder:text-neutral-500" placeholder="e.g. Design Print Proof">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700">Status</label>
-                    <select id="taskStatus" class="w-full mt-1 border border-gray-300 rounded-lg p-2">
+                    <label class="block text-sm font-medium text-neutral-200">Status</label>
+                    <select id="taskStatus" class="w-full mt-1 border border-neutral-800 bg-neutral-950 text-white rounded-lg p-2">
                         <option value="Done">Done</option>
                         <option value="In Progress">In Progress</option>
                         <option value="Blocked">Blocked</option>
                     </select>
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700">Contributor</label>
-                    <select id="selectContributor" required class="w-full mt-1 border border-gray-300 rounded-lg p-2 focus:ring-blue-500 focus:border-blue-500">
+                    <label class="block text-sm font-medium text-neutral-200">Contributor</label>
+                    <select id="selectContributor" required class="w-full mt-1 border border-neutral-800 bg-neutral-950 text-white rounded-lg p-2 focus:ring-red-600 focus:border-red-600">
                     </select>
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700">Description</label>
-                    <textarea id="logSummary" required class="w-full mt-1 border border-gray-300 rounded-lg p-2 h-20" placeholder="Details of the work performed..."></textarea>
+                    <label class="block text-sm font-medium text-neutral-200">Description</label>
+                    <textarea id="logSummary" required class="w-full mt-1 border border-neutral-800 bg-neutral-950 text-white rounded-lg p-2 h-20 placeholder:text-neutral-500" placeholder="Details of the work performed..."></textarea>
                 </div>
                 <div class="flex justify-end space-x-3 mt-6">
-                    <button type="button" onclick="toggleModal(false)" class="text-gray-600 font-semibold px-4 py-2 hover:bg-gray-100 rounded-lg">Cancel</button>
-                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-semibold shadow-md">Save Task</button>
+                    <button type="button" onclick="toggleModal(false)" class="text-neutral-300 font-semibold px-4 py-2 hover:bg-neutral-900 rounded-lg">Cancel</button>
+                    <button type="submit" class="bg-red-700 hover:bg-red-800 text-white px-6 py-2 rounded-lg font-semibold shadow-md danger-glow">Save Task</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <div id="projectModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-        <div class="bg-white rounded-xl shadow-xl w-full max-w-lg p-6">
-            <h2 id="projectModalTitle" class="text-xl font-bold mb-4">Add Project</h2>
+    <div id="projectModal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50">
+        <div class="panel rounded-xl shadow-xl w-full max-w-lg p-6">
+            <h2 id="projectModalTitle" class="text-xl font-bold mb-4 text-white">Add Project</h2>
             <form onsubmit="handleProjectSubmit(event)" class="space-y-4">
                 <input type="hidden" id="projectIdField">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700">Project Name</label>
-                    <input type="text" id="projectName" required class="w-full mt-1 border border-gray-300 rounded-lg p-2" placeholder="e.g. New Branch Signage">
+                    <label class="block text-sm font-medium text-neutral-200">Project Name</label>
+                    <input type="text" id="projectName" required class="w-full mt-1 border border-neutral-800 bg-neutral-950 text-white rounded-lg p-2 placeholder:text-neutral-500" placeholder="e.g. New Branch Signage">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700">Status</label>
-                    <select id="projectStatus" class="w-full mt-1 border border-gray-300 rounded-lg p-2">
+                    <label class="block text-sm font-medium text-neutral-200">Status</label>
+                    <select id="projectStatus" class="w-full mt-1 border border-neutral-800 bg-neutral-950 text-white rounded-lg p-2">
                         <option value="Active">Active</option>
                         <option value="Delayed">Delayed</option>
                         <option value="Completed">Completed</option>
@@ -138,25 +167,25 @@
                     </select>
                 </div>
                 <div class="flex justify-end space-x-3 mt-6">
-                    <button type="button" onclick="toggleProjectModal(false)" class="text-gray-600 font-semibold px-4 py-2 hover:bg-gray-100 rounded-lg">Cancel</button>
-                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-semibold shadow-md">Save Project</button>
+                    <button type="button" onclick="toggleProjectModal(false)" class="text-neutral-300 font-semibold px-4 py-2 hover:bg-neutral-900 rounded-lg">Cancel</button>
+                    <button type="submit" class="bg-red-700 hover:bg-red-800 text-white px-6 py-2 rounded-lg font-semibold shadow-md danger-glow">Save Project</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <div id="contributorModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-        <div class="bg-white rounded-xl shadow-xl w-full max-w-lg p-6">
-            <h2 id="contributorModalTitle" class="text-xl font-bold mb-4">Add Contributor</h2>
+    <div id="contributorModal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50">
+        <div class="panel rounded-xl shadow-xl w-full max-w-lg p-6">
+            <h2 id="contributorModalTitle" class="text-xl font-bold mb-4 text-white">Add Contributor</h2>
             <form onsubmit="handleContributorSubmit(event)" class="space-y-4">
                 <input type="hidden" id="contributorIdField">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700">Contributor Name</label>
-                    <input type="text" id="contributorName" required class="w-full mt-1 border border-gray-300 rounded-lg p-2" placeholder="e.g. Siti Rahma">
+                    <label class="block text-sm font-medium text-neutral-200">Contributor Name</label>
+                    <input type="text" id="contributorName" required class="w-full mt-1 border border-neutral-800 bg-neutral-950 text-white rounded-lg p-2 placeholder:text-neutral-500" placeholder="e.g. Siti Rahma">
                 </div>
                 <div class="flex justify-end space-x-3 mt-6">
-                    <button type="button" onclick="toggleContributorModal(false)" class="text-gray-600 font-semibold px-4 py-2 hover:bg-gray-100 rounded-lg">Cancel</button>
-                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-semibold shadow-md">Save Contributor</button>
+                    <button type="button" onclick="toggleContributorModal(false)" class="text-neutral-300 font-semibold px-4 py-2 hover:bg-neutral-900 rounded-lg">Cancel</button>
+                    <button type="submit" class="bg-red-700 hover:bg-red-800 text-white px-6 py-2 rounded-lg font-semibold shadow-md danger-glow">Save Contributor</button>
                 </div>
             </form>
         </div>
@@ -181,8 +210,8 @@
             }
 
             const typeClass = type === 'error'
-                ? 'border-red-200 bg-red-50 text-red-700'
-                : 'border-blue-200 bg-blue-50 text-blue-700';
+                ? 'border-red-900/70 bg-red-950/70 text-red-200'
+                : 'border-red-900/60 bg-red-950/40 text-red-100';
 
             banner.className = `mb-4 rounded-lg border px-4 py-3 text-sm ${typeClass}`;
             banner.textContent = message;
@@ -231,12 +260,12 @@
             contributorSelect.innerHTML = '';
 
             if (state.projects.length === 0) {
-                container.innerHTML = '<p class="text-sm text-gray-400">No projects available.</p>';
+                container.innerHTML = '<p class="text-sm text-neutral-500">No projects available.</p>';
                 select.innerHTML = '<option value="">No projects available</option>';
             } else {
                 state.projects.forEach(p => {
                     const btn = document.createElement('button');
-                    btn.className = `w-full text-left p-3 rounded-lg transition ${state.activeProjectId === p.id ? 'bg-blue-50 text-blue-700 font-semibold' : 'text-gray-600 hover:bg-gray-50'}`;
+                    btn.className = `w-full text-left p-3 rounded-lg border transition ${state.activeProjectId === p.id ? 'border-red-800 bg-red-950/60 text-red-100 font-semibold' : 'border-transparent text-neutral-300 hover:border-red-950 hover:bg-neutral-950'}`;
                     btn.innerText = p.name;
                     btn.onclick = () => { state.activeProjectId = p.id; render(); };
                     container.appendChild(btn);
@@ -266,7 +295,7 @@
             container.innerHTML = '';
 
             if (state.contributors.length === 0) {
-                container.innerHTML = '<p class="text-sm text-gray-400">No contributors available.</p>';
+                container.innerHTML = '<p class="text-sm text-neutral-500">No contributors available.</p>';
                 return;
             }
 
@@ -276,15 +305,15 @@
                 }, 0);
 
                 const item = document.createElement('div');
-                item.className = 'flex flex-col gap-3 rounded-lg border border-gray-100 p-4 md:flex-row md:items-center md:justify-between';
+                item.className = 'flex flex-col gap-3 rounded-lg border border-red-950/60 bg-neutral-950/60 p-4 md:flex-row md:items-center md:justify-between';
                 item.innerHTML = `
                     <div>
-                        <h3 class="font-semibold text-gray-800">${contributor.name}</h3>
-                        <p class="text-sm text-gray-500">Assigned to ${usageCount} task${usageCount === 1 ? '' : 's'}</p>
+                        <h3 class="font-semibold text-neutral-100">${contributor.name}</h3>
+                        <p class="text-sm text-neutral-400">Assigned to ${usageCount} task${usageCount === 1 ? '' : 's'}</p>
                     </div>
                     <div class="flex gap-3">
-                        <button type="button" data-action="edit" data-id="${contributor.id}" class="rounded-lg border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50">Edit</button>
-                        <button type="button" data-action="delete" data-id="${contributor.id}" class="rounded-lg border border-red-200 px-4 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-50 ${usageCount > 0 ? 'opacity-50 cursor-not-allowed' : ''}" ${usageCount > 0 ? 'disabled' : ''}>Delete</button>
+                        <button type="button" data-action="edit" data-id="${contributor.id}" class="rounded-lg border border-neutral-800 px-4 py-2 text-sm font-semibold text-neutral-100 transition hover:bg-neutral-900">Edit</button>
+                        <button type="button" data-action="delete" data-id="${contributor.id}" class="rounded-lg border border-red-900/60 px-4 py-2 text-sm font-semibold text-red-400 transition hover:bg-red-950/60 ${usageCount > 0 ? 'opacity-50 cursor-not-allowed' : ''}" ${usageCount > 0 ? 'disabled' : ''}>Delete</button>
                     </div>
                 `;
 
@@ -313,30 +342,30 @@
             if (!project) {
                 document.getElementById('viewProjectName').innerText = 'No project selected';
                 document.getElementById('viewProjectStatus').innerText = state.isLoading ? 'Loading project data...' : 'Add projects in the SQLite database to begin tracking.';
-                document.getElementById('logTimeline').innerHTML = '<p class="text-gray-400 italic">No tasks logged yet.</p>';
+                document.getElementById('logTimeline').innerHTML = '<p class="text-neutral-500 italic">No tasks logged yet.</p>';
                 return;
             }
 
             document.getElementById('viewProjectName').innerText = project.name;
-            document.getElementById('viewProjectStatus').innerHTML = `Status: <span class="px-2 py-1 bg-gray-100 rounded-full text-xs font-bold uppercase">${project.status}</span>`;
+            document.getElementById('viewProjectStatus').innerHTML = `Status: <span class="px-2 py-1 bg-red-950/70 text-red-100 rounded-full text-xs font-bold uppercase border border-red-900/60">${project.status}</span>`;
             
             const timeline = document.getElementById('logTimeline');
             timeline.innerHTML = '';
             
             if (project.logs.length === 0) {
-                timeline.innerHTML = '<p class="text-gray-400 italic">No tasks logged for this project.</p>';
+                timeline.innerHTML = '<p class="text-neutral-500 italic">No tasks logged for this project.</p>';
             } else {
                 project.logs.forEach(log => {
-                    const statusColor = log.status === 'Done' ? 'bg-green-100 text-green-700' : (log.status === 'In Progress' ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700');
+                    const statusColor = log.status === 'Done' ? 'bg-red-950/60 text-red-100 border border-red-800/50' : (log.status === 'In Progress' ? 'bg-neutral-900 text-red-200 border border-red-900/50' : 'bg-red-900/30 text-red-300 border border-red-700/50');
                     timeline.innerHTML += `
-                        <div class="border-l-2 border-blue-200 pl-4 py-2 hover:bg-gray-50 transition rounded-r-lg">
+                        <div class="border-l-2 border-red-700 pl-4 py-3 hover:bg-neutral-950/60 transition rounded-r-lg bg-neutral-950/30">
                             <div class="flex justify-between items-center mb-1">
-                                <span class="text-xs text-gray-400 font-bold uppercase">${log.date}</span>
+                                <span class="text-xs text-neutral-500 font-bold uppercase">${log.date}</span>
                                 <span class="text-[10px] px-2 py-0.5 rounded-full ${statusColor}">${log.status}</span>
                             </div>
-                            <h4 class="font-semibold text-gray-800">${log.task}</h4>
-                            <p class="text-xs font-semibold uppercase tracking-wide text-blue-700 mt-1">${log.contributorName || 'Unassigned'}</p>
-                            <p class="text-gray-600 text-sm mt-1">${log.note}</p>
+                            <h4 class="font-semibold text-white">${log.task}</h4>
+                            <p class="text-xs font-semibold uppercase tracking-wide text-red-300 mt-1">${log.contributorName || 'Unassigned'}</p>
+                            <p class="text-neutral-300 text-sm mt-1">${log.note}</p>
                         </div>
                     `;
                 });
